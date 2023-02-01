@@ -7,6 +7,8 @@ import java.rmi.server.UnicastRemoteObject;
 public class CommunicateServer extends UnicastRemoteObject
 implements Communicate
 {
+    // TODO: data structures to store client info and contents
+
     public CommunicateServer() throws RemoteException
     {
 
@@ -48,8 +50,8 @@ implements Communicate
     public static void main(String args[]) throws RemoteException
     {
         LocateRegistry.createRegistry(1099);
-        // create server object
-        // rebind name    Naming.rebind(<>, <>);
+        Communicate content_srv = new CommunicateServer();
+        Naming.rebind("server.Communicate", content_srv);
         System.out.println("Publish-Subscribe Server is ready.");
     }
 }
