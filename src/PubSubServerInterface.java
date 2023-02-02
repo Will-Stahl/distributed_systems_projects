@@ -1,7 +1,7 @@
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-public interface Communicate extends Remote
+public interface PubSubServerInterface extends Remote
 {
     public boolean Join(String IP, int Port) throws RemoteException;
     
