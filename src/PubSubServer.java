@@ -43,12 +43,13 @@ implements PubSubServerInterface
         // TODO: check for valid IP address
 
         Subscribers.add(new SubscriberInfo(IP, Port));
+        System.out.printf("Added new client with IP: %s, Port: %d\n", IP, Port);
         return true;
     }
 
     /**
      * Subscriber should always call Leave() before it terminates
-     * Removes calling subscriber from list of SubscriberInfo's
+     * Removes calling subscriber from SubscriberInfo list
      *
      * @param IP client IP address
      * @param Port client listening at port number
@@ -56,6 +57,15 @@ implements PubSubServerInterface
      */
     public boolean Leave(String IP, int Port) throws RemoteException
     {
+        for (int i = 0; i < Subscribers.size(); i++) {
+            SubscriberInfo Sub = Subscribers.get(i);
+            if (Sub.GetIP().equals(IP) && Sub.GetPort() == Port) {
+                Subscribers.remove(i);
+                System.out.print("Removed subscriber\n");
+                return true;
+            }
+        }
+        System.out.print("Client was not already joined\n");
         return false;
     }
     
@@ -79,7 +89,7 @@ implements PubSubServerInterface
     
     public boolean Ping() throws RemoteException
     {
-        return false;
+        return true;
     }
 
     public static void main(String args[])
