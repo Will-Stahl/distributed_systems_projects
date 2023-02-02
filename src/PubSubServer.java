@@ -3,8 +3,7 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.net.MalformedURLException;
 import java.rmi.server.UnicastRemoteObject;
-
-import java.util.ArrayList;
+import java.util.*;
 
 public class PubSubServer extends UnicastRemoteObject
 implements PubSubServerInterface
@@ -69,9 +68,13 @@ implements PubSubServerInterface
         return false;
     }
     
-    public boolean Subscribe(String IP, int Port, String Article)
-    throws RemoteException
+    public boolean Subscribe(String IP, int Port, String Article) throws RemoteException
     {
+        if (ArticleValidForSubscribe(Article)){
+            //TODO: Fill subscribe details
+        } else{
+            // TODO: send message to client that article format is invalid
+        }
         return false;
     }
     
@@ -81,10 +84,69 @@ implements PubSubServerInterface
         return false;
     }
     
-    public boolean Publish(String Article, String IP, int Port)
-    throws RemoteException
+    public boolean Publish(String Article, String IP, int Port) throws RemoteException
     {
+        if (ArticleValidForPublish(Article)){
+            //TODO: Fill publish details
+        } else{
+            // TODO: send message to client that article format is invalid
+        }
         return false;
+    }
+
+    private static boolean ArticleValidForPublish(String article){
+        // Return false if article format is like ";;;contents" or "contents" field is missing
+        HashMap<String, String> articleMap = parseArticle(article);
+        if (FirstThreeFieldsEmpty(articleMap) || articleMap.get("contents") == "") return false;
+
+        return true;
+    }
+
+    private static boolean ArticleValidForSubscribe(String article){
+        Set<String> types = new HashSet<>(Arrays.asList("Sports", "Lifestyle", "Entertainment", "Business", "Technology",
+                                                        "Science", "Politics" ,"Health"));
+
+        // Check if Type, Originator and Org fields are all empty. 
+        // If the aforementioned three fields are not empty, then check if contents field is not empty or if type is invalid
+        HashMap<String, String> articleMap = parseArticle(article);
+        if (FirstThreeFieldsEmpty(articleMap) || !(types.contains(articleMap.get("type"))) || 
+                                    articleMap.get("contents") != "") return false;
+        return true;
+    }
+
+    private static boolean FirstThreeFieldsEmpty(HashMap<String, String> articleMap){
+        return (articleMap.get("type") == "") && 
+                (articleMap.get("originator") == "") && 
+                (articleMap.get("org") == "");
+    }
+
+    private static HashMap<String, String> parseArticle(String article){
+        // Remove any leading or trailing white spaces
+        article = article.trim();
+        LinkedHashMap<String, String> articleMap = new LinkedHashMap<>();
+        articleMap.put("type", "");
+        articleMap.put("originator", "");
+        articleMap.put("org", "");
+        articleMap.put("contents", "");
+
+        ArrayList<String> keys = new ArrayList<String>(articleMap.keySet());
+
+        final char SEPARATOR = ';';
+        String value = "";
+        int keyIndex = 0;
+        for (int i = 0; i < article.length(); i++){
+            if (article.charAt(i) == SEPARATOR){
+                articleMap.put(keys.get(keyIndex), value.trim());
+                keyIndex += 1;
+                value = "";
+            } else if (i == article.length() - 1){
+                value += article.charAt(i);
+                articleMap.put(keys.get(keyIndex), value);
+            } else {
+                value += article.charAt(i);
+            }
+        }
+        return articleMap;
     }
     
     public boolean Ping() throws RemoteException
@@ -101,8 +163,15 @@ implements PubSubServerInterface
         System.out.println("Publish-Subscribe Server is ready.");
     }
 
-    private boolean CheckValidIP(String IP) {
-        // String[] Parts = IP.split("\.");
-        return false;
+    private static boolean IsValidIPAddress(String IP) {
+        String[] parts = IP.split("\\.");
+
+        if (parts.length != 4) return false;
+
+        for (int i = 0; i < parts.length; i++){
+            String part = parts[i];
+            if (Integer.parseInt(part) < 0 || Integer.parseInt(part) > 255) return false;
+        }
+        return true;
     }
 }
