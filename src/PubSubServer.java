@@ -46,6 +46,18 @@ implements PubSubServerInterface
         return true;
     }
 
+    private static boolean IsValidIPAddress(String IP) {
+        String[] parts = IP.split("\\.");
+
+        if (parts.length != 4) return false;
+
+        for (int i = 0; i < parts.length; i++){
+            String part = parts[i];
+            if (Integer.parseInt(part) < 0 || Integer.parseInt(part) > 255) return false;
+        }
+        return true;
+    }
+
     /**
      * Subscriber should always call Leave() before it terminates
      * Removes calling subscriber from SubscriberInfo list
@@ -107,10 +119,18 @@ implements PubSubServerInterface
                                                         "Science", "Politics" ,"Health"));
 
         // Check if Type, Originator and Org fields are all empty. 
-        // If the aforementioned three fields are not empty, then check if contents field is not empty or if type is invalid
         HashMap<String, String> articleMap = parseArticle(article);
-        if (FirstThreeFieldsEmpty(articleMap) || !(types.contains(articleMap.get("type"))) || 
-                                    articleMap.get("contents") != "") return false;
+
+        // If first three fields are all empty, return False
+        if (FirstThreeFieldsEmpty(articleMap)) return false;
+        
+        // At this point we know at least 1 of the first 3 fields is not empty
+        // If the article type is present then check if it is a valid article type
+        if (articleMap.get("type") != "" && !(types.contains(articleMap.get("type")))) return false;
+
+        // Finally check if the "contents" field is empty
+        if (articleMap.get("contents") != "") return false;
+
         return true;
     }
 
@@ -161,17 +181,5 @@ implements PubSubServerInterface
         PubSubServerInterface ContentSrv = new PubSubServer();
         Naming.rebind("server.PubSubServer", ContentSrv);
         System.out.println("Publish-Subscribe Server is ready.");
-    }
-
-    private static boolean IsValidIPAddress(String IP) {
-        String[] parts = IP.split("\\.");
-
-        if (parts.length != 4) return false;
-
-        for (int i = 0; i < parts.length; i++){
-            String part = parts[i];
-            if (Integer.parseInt(part) < 0 || Integer.parseInt(part) > 255) return false;
-        }
-        return true;
     }
 }
