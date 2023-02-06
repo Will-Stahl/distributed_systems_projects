@@ -3,6 +3,10 @@ import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.net.MalformedURLException;
 import java.rmi.server.UnicastRemoteObject;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.io.IOException;
 import java.util.*;
 
 public class PubSubServer extends UnicastRemoteObject
@@ -10,10 +14,15 @@ implements PubSubServerInterface
 {
     // TODO: data structures to store client info and contents
     private ArrayList<SubscriberInfo> Subscribers;
+    private HashMap<String, ArrayList<SubscriberInfo>> articles;
+    private DatagramSocket socket;
+    private final int PORT_NUMBER = 1099;
 
-    public PubSubServer() throws RemoteException
+    public PubSubServer() throws RemoteException, IOException
     {
         Subscribers = new ArrayList<SubscriberInfo>();
+        articles = new HashMap<>();
+        socket = new DatagramSocket(PORT_NUMBER);
     }
 
     /**
@@ -40,10 +49,13 @@ implements PubSubServerInterface
         }
 
         // TODO: check for valid IP address
-
-        Subscribers.add(new SubscriberInfo(IP, Port));
-        System.out.printf("Added new client with IP: %s, Port: %d\n", IP, Port);
-        return true;
+        if (IsValidIPAddress(IP)){
+            Subscribers.add(new SubscriberInfo(IP, Port));
+            System.out.printf("Added new client with IP: %s, Port: %d\n", IP, Port);
+            return true;
+        }
+        System.out.println("Invalid IP Address");
+        return false;
     }
 
     private static boolean IsValidIPAddress(String IP) {
@@ -80,28 +92,96 @@ implements PubSubServerInterface
         return false;
     }
     
+    /**
+     * Add article to list of subscriptions if it has already not been created earlier and 
+     * add client to list of subscriptions if the article already exists. If the article format
+     * is not valid for subscription, then return an error message.
+     * 
+     * @param IP: Client IP address
+     * @param Port: Client listening at port number
+     * @param Article: Article name the client wants to subscribe to
+     */
     public boolean Subscribe(String IP, int Port, String Article) throws RemoteException
     {
-        if (ArticleValidForSubscribe(Article)){
-            //TODO: Fill subscribe details
-        } else{
-            // TODO: send message to client that article format is invalid
+        if (ArticleValidForSubscribeOrUnSub(Article)){
+            // If article has not been created earlier, then we should create it
+            if (!articles.containsKey(Article)){
+                articles.put(Article, new ArrayList<SubscriberInfo>());
+            }
+
+            // Add current client to the article subscriber list
+            for (SubscriberInfo sub : Subscribers){
+                if (sub.GetIP() == IP && sub.GetPort() == Port){
+                    articles.get(Article).add(sub);
+                    return true;
+                }
+            }
+        } 
+        System.out.println("Article type not valid for subscribing.");
+        return false;
+    }
+    
+    /**
+     * Unsubscribe client from an article if the article exists. If the article doesn't exist,
+     * then just return an error message.
+     * 
+     * @param IP: Client IP address
+     * @param Port: Client listening at port number
+     * @param Article: Article name the client wants to unsubscribe from
+     */
+    public boolean Unsubscribe(String IP, int Port, String Article) throws RemoteException
+    {
+        if (ArticleValidForSubscribeOrUnSub(Article)){
+            // If the article hasn't been published earlier, then return false
+            if (!articles.containsKey(Article)){
+                System.out.println("Article does not exist and cannot be unsubscribed from");
+                return false;
+            }
+
+            // Get all subscribers to the current article and remove the client
+            ArrayList<SubscriberInfo> subscribers = articles.get(Article);
+            for(int i = 0; i < subscribers.size(); i++){
+                SubscriberInfo sub = subscribers.get(i);
+                if (sub.GetIP() == IP && sub.GetPort() == Port){
+                    subscribers.remove(i);
+                    return true;
+                }
+            }
         }
         return false;
     }
     
-    public boolean Unsubscribe(String IP, int Port, String Article)
-    throws RemoteException
-    {
-        return false;
-    }
-    
+    /**
+     * Publish article to a list of clients if it has not already been published before
+     * and that has the valid format required for publishing.
+     * 
+     * @param IP: Client IP address
+     * @param Port: Client listening at port number
+     * @param Article: Article name that should be published
+     */
     public boolean Publish(String Article, String IP, int Port) throws RemoteException
     {
         if (ArticleValidForPublish(Article)){
-            //TODO: Fill publish details
-        } else{
-            // TODO: send message to client that article format is invalid
+            // If the article has already been published, then don't publish it again
+            if (articles.containsKey(Article)) {
+                System.out.println("Article has already been published earlier.");
+                return false;
+            }
+
+            // Get current list of clients subscribed to an article
+            ArrayList<SubscriberInfo> subscribers = articles.get(Article);
+            byte[] message = Article.getBytes();
+            for (SubscriberInfo sub : subscribers){
+                try{
+                    // Prepare packet and send to clients
+                    InetAddress address = InetAddress.getByName(sub.GetIP());
+                    DatagramPacket packet = new DatagramPacket(message, message.length, address, sub.GetPort());
+                    socket.send(packet);
+                } catch(Exception e){
+                    System.out.printf("Error detected while publishing to client with IP Address: %s and Port Number: %d", sub.GetIP(), sub.GetPort());
+                    return false;
+                }
+            }
         }
         return false;
     }
@@ -114,7 +194,7 @@ implements PubSubServerInterface
         return true;
     }
 
-    private static boolean ArticleValidForSubscribe(String article){
+    private static boolean ArticleValidForSubscribeOrUnSub(String article){
         Set<String> types = new HashSet<>(Arrays.asList("Sports", "Lifestyle", "Entertainment", "Business", "Technology",
                                                         "Science", "Politics" ,"Health"));
 
@@ -177,9 +257,13 @@ implements PubSubServerInterface
     public static void main(String args[])
     throws RemoteException, MalformedURLException
     {
-        LocateRegistry.createRegistry(1099);
-        PubSubServerInterface ContentSrv = new PubSubServer();
-        Naming.rebind("server.PubSubServer", ContentSrv);
-        System.out.println("Publish-Subscribe Server is ready.");
+        try{
+            LocateRegistry.createRegistry(1099);
+            PubSubServerInterface ContentSrv = new PubSubServer();
+            Naming.rebind("server.PubSubServer", ContentSrv);
+            System.out.println("Publish-Subscribe Server is ready.");
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 }
