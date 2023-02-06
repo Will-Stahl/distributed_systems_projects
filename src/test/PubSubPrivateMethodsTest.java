@@ -3,7 +3,7 @@ package test;
 import org.junit.*;
 import java.util.*;
 
-public class tests {
+public class PubSubPrivateMethodsTest {
     private boolean IsValidIPAddress(String IP) {
         String[] parts = IP.split("\\.");
 
