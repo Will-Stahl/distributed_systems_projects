@@ -24,7 +24,7 @@ public class tests {
         return true;
     }
 
-    private static boolean ArticleValidForSubscribe(String article){
+    private static boolean ArticleValidForSubscribeOrUnSub(String article){
         Set<String> types = new HashSet<>(Arrays.asList("Sports", "Lifestyle", "Entertainment", "Business", "Technology",
                                                         "Science", "Politics" ,"Health"));
 
@@ -156,31 +156,31 @@ public class tests {
     @Test
     public void CheckValidArticleForSubscribe(){
         String articleName = "Sports;;;";
-        Assert.assertTrue(ArticleValidForSubscribe(articleName));
+        Assert.assertTrue(ArticleValidForSubscribeOrUnSub(articleName));
 
         articleName = ";Someone;UMN;";
-        Assert.assertTrue(ArticleValidForSubscribe(articleName));
+        Assert.assertTrue(ArticleValidForSubscribeOrUnSub(articleName));
         
         articleName = "Science;;UMN;";
-        Assert.assertTrue(ArticleValidForSubscribe(articleName));
+        Assert.assertTrue(ArticleValidForSubscribeOrUnSub(articleName));
 
         articleName = ";;UMN;";
-        Assert.assertTrue(ArticleValidForSubscribe(articleName));
+        Assert.assertTrue(ArticleValidForSubscribeOrUnSub(articleName));
     }
 
     // Check if invalid article formats return False for "Subscribe"
     @Test
     public void CheckInValidArticleForSubscribe(){
         String articleName = ";;;contents";
-        Assert.assertFalse(ArticleValidForSubscribe(articleName));
+        Assert.assertFalse(ArticleValidForSubscribeOrUnSub(articleName));
 
         articleName = ";;UMN;contents";
-        Assert.assertFalse(ArticleValidForSubscribe(articleName));
+        Assert.assertFalse(ArticleValidForSubscribeOrUnSub(articleName));
 
         articleName = ";;;";
-        Assert.assertFalse(ArticleValidForSubscribe(articleName));
+        Assert.assertFalse(ArticleValidForSubscribeOrUnSub(articleName));
 
         articleName = " ";
-        Assert.assertFalse(ArticleValidForSubscribe(articleName));
+        Assert.assertFalse(ArticleValidForSubscribeOrUnSub(articleName));
     }
 }
