@@ -80,17 +80,28 @@ implements PubSubServerInterface
      */
     public boolean Leave(String IP, int Port) throws RemoteException
     {
-        // TODO: remove client from all articles as well
+        // check for subscriber in Subscribers
+        SubscriberInfo subPtr = null;
         for (int i = 0; i < Subscribers.size(); i++) {
             SubscriberInfo Sub = Subscribers.get(i);
             if (Sub.GetIP().equals(IP) && Sub.GetPort() == Port) {
+                subPtr = Subscribers.get(i);
                 Subscribers.remove(i);
-                System.out.print("Removed subscriber\n");
-                return true;
             }
         }
-        System.out.print("Client was not already joined\n");
-        return false;
+        if (subPtr == null) {
+            System.out.print("Client was not already joined\n");
+            return false;
+        }
+        // TODO: test removing client from all articles as well
+        final SubscriberInfo fnlSubPtr = subPtr;
+        articles.forEach((k, v) -> {
+            if (v.contains(fnlSubPtr)) {
+                v.remove(fnlSubPtr);
+            }});
+        
+        System.out.print("Removed subscriber\n");
+        return true;
     }
     
     /**
@@ -113,6 +124,10 @@ implements PubSubServerInterface
             // Add current client to the article subscriber list
             for (SubscriberInfo sub : Subscribers){
                 if (sub.GetIP() == IP && sub.GetPort() == Port){
+                    if (articles.get(Article).contains(sub)) {
+                        // TODO: may not need to return false here, but don't duplicate subscriptions
+                        return false;
+                    }
                     articles.get(Article).add(sub);
                     return true;
                 }
