@@ -12,7 +12,7 @@ import java.util.*;
 public class PubSubServer extends UnicastRemoteObject
 implements PubSubServerInterface
 {
-    // TODO: data structures to store client info and contents
+    
     private ArrayList<SubscriberInfo> Subscribers;
     private HashMap<String, ArrayList<SubscriberInfo>> articles;
     private DatagramSocket socket;
@@ -48,7 +48,7 @@ implements PubSubServerInterface
             }
         }
 
-        // TODO: check for valid IP address
+        // check for valid IP address
         if (IsValidIPAddress(IP)){
             Subscribers.add(new SubscriberInfo(IP, Port));
             System.out.printf("Added new client with IP: %s, Port: %d\n", IP, Port);
@@ -80,6 +80,7 @@ implements PubSubServerInterface
      */
     public boolean Leave(String IP, int Port) throws RemoteException
     {
+        // TODO: remove client from all articles as well
         for (int i = 0; i < Subscribers.size(); i++) {
             SubscriberInfo Sub = Subscribers.get(i);
             if (Sub.GetIP().equals(IP) && Sub.GetPort() == Port) {
@@ -167,6 +168,10 @@ implements PubSubServerInterface
                 System.out.println("Article has already been published earlier.");
                 return false;
             }
+
+            // TODO: Clients with less specific subscriptions need to receive
+            //          more specific articles that match the non-blank fields
+            //          in the subscription!
 
             // Get current list of clients subscribed to an article
             ArrayList<SubscriberInfo> subscribers = articles.get(Article);
