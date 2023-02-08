@@ -14,7 +14,8 @@ implements PubSubServerInterface
 {
     
     private ArrayList<SubscriberInfo> Subscribers;
-    private HashMap<String, ArrayList<SubscriberInfo>> articles;
+    // subMap maps a list of subscribers to keys of subscription fields
+    private HashMap<String, ArrayList<SubscriberInfo>> subMap;
     private final static int PORT_NUMBER = 1099;
     private static DatagramSocket socket;
     private final int MAX_CLIENTS = 10;
@@ -23,7 +24,7 @@ implements PubSubServerInterface
     public PubSubServer() throws RemoteException, IOException
     {
         Subscribers = new ArrayList<SubscriberInfo>();
-        articles = new HashMap<>();
+        subMap = new HashMap<>();
         socket = new DatagramSocket(PORT_NUMBER);
     }
 
@@ -100,11 +101,12 @@ implements PubSubServerInterface
             System.out.print("Client was not already joined\n");
             return false;
         }
-        // TODO: test removing client from all articles as well
+        // Remove client from all subMap'ings as well
+        // TODO: test that clients are removed from subMap
         final SubscriberInfo fnlSubPtr = subPtr;
-        articles.forEach((k, v) -> {
-            if (v.contains(fnlSubPtr)) {
-                v.remove(fnlSubPtr);
+        subMap.forEach((k, v) -> {
+                if (v.contains(fnlSubPtr)) {
+                    v.remove(fnlSubPtr);
             }});
         
         System.out.print("Removed subscriber\n");
@@ -122,26 +124,32 @@ implements PubSubServerInterface
      */
     public boolean Subscribe(String IP, int Port, String Article) throws RemoteException
     {
-        if (ArticleValidForSubscribeOrUnSub(Article)){
-            // If article has not been created earlier, then we should create it
-            if (!articles.containsKey(Article)){
-                articles.put(Article, new ArrayList<SubscriberInfo>());
-            }
+        if (!ArticleValidForSubscribeOrUnSub(Article)){
+            System.out.println("Article type not valid for subscribing.");
+            return false;
+        }
 
-            // Add current client to the article subscriber list
-            for (SubscriberInfo sub : Subscribers){
-                if (sub.GetIP() == IP && sub.GetPort() == Port){
-                    if (articles.get(Article).contains(sub)) {
-                        // TODO: may not need to return false here, but don't duplicate subscriptions
-                        return false;
-                    }
-                    articles.get(Article).add(sub);
-                    System.out.printf("Client with IP Address %s has subscribed to Article %s.",IP, Article);
-                    return true;
+        // If article has not been created earlier, then we should create it
+        HashMap<String, String> subDetailsMap = parseArticle(Article);
+        subDetailsMap.remove("contents");  // don't put a blank field in
+        String subscriptionDetails = unparseSubscription(subDetailsMap);
+        if (!subMap.containsKey(subscriptionDetails)){
+            subMap.put(subscriptionDetails, new ArrayList<SubscriberInfo>());
+        }
+
+        // Add current client to the article subscriber list
+        for (SubscriberInfo sub : Subscribers){
+            if (sub.GetIP() == IP && sub.GetPort() == Port){
+                if (subMap.get(subscriptionDetails).contains(sub)) {
+                    // may not need to return false here, but don't duplicate subscriptions
+                    return false;
                 }
+                subMap.get(subscriptionDetails).add(sub);
+                System.out.printf("Client with IP Address %s has subscribed to Article %s.",IP, Article);
+                return true;
             }
-        } 
-        System.out.println("Article type not valid for subscribing.");
+        }
+        System.out.println("Client's IP address and Port no. not found on server");
         return false;
     }
     
@@ -155,24 +163,30 @@ implements PubSubServerInterface
      */
     public boolean Unsubscribe(String IP, int Port, String Article) throws RemoteException
     {
-        if (ArticleValidForSubscribeOrUnSub(Article)){
-            // If the article hasn't been published earlier, then return false
-            if (!articles.containsKey(Article)){
-                System.out.println("Article does not exist and cannot be unsubscribed from");
-                return false;
-            }
+        if (!ArticleValidForSubscribeOrUnSub(Article)){
+            return false;
+        }
 
-            // Get all subscribers to the current article and remove the client
-            ArrayList<SubscriberInfo> subscribers = articles.get(Article);
-            for(int i = 0; i < subscribers.size(); i++){
-                SubscriberInfo sub = subscribers.get(i);
-                if (sub.GetIP() == IP && sub.GetPort() == Port){
-                    System.out.printf("Client with IP Address %s has unsubscribed from Article %s.",IP, Article);
-                    subscribers.remove(i);
-                    return true;
-                }
+        HashMap<String, String> subDetailsMap = parseArticle(Article);
+        subDetailsMap.remove("contents"); 
+        String subscriptionDetails = unparseSubscription(subDetailsMap);
+        if (!subMap.containsKey(subscriptionDetails)){
+            // If the article hasn't been published earlier, then return false
+            System.out.println("Article does not exist and cannot be unsubscribed from");
+            return false;
+        }
+
+        // Get all subscribers to the current article and remove the client
+        ArrayList<SubscriberInfo> leavingFrom = subMap.get(subscriptionDetails);
+        for(int i = 0; i < leavingFrom.size(); i++){
+            SubscriberInfo sub = leavingFrom.get(i);
+            if (sub.GetIP() == IP && sub.GetPort() == Port){
+                System.out.printf("Client with IP Address %s has unsubscribed from Article %s.",IP, Article);
+                leavingFrom.remove(i);
+                return true;
             }
         }
+        System.out.println("Client wasn't subscribed to article.");
         return false;
     }
     
@@ -187,32 +201,42 @@ implements PubSubServerInterface
     public boolean Publish(String Article, String IP, int Port) throws RemoteException
     {
         if (ArticleValidForPublish(Article)){
-            // If the article has already been published, then don't publish it again
-            if (articles.containsKey(Article)) {
-                System.out.println("Article has already been published earlier.");
-                return false;
+            System.out.println("Article format not valid for publishing.");
+            return false;
+        }
+        // list containing subscription fields combination from Article
+        // as well as all subcombinations of those fields
+        ArrayList<String> comboList = genLessSpecificSubs(Article);
+        // maintain list of clients who have already had this published to them
+        ArrayList<SubscriberInfo> sentToAlready = new ArrayList<>();
+
+        for (String combo : comboList) {
+            ArrayList<SubscriberInfo> subscribers = subMap.get(combo);
+            if (subscribers == null) {
+                continue;  // none have ever subscribed to this combination
             }
-
-            // TODO: Clients with less specific subscriptions need to receive
-            //          more specific articles that match the non-blank fields
-            //          in the subscription!
-
-            // Get current list of clients subscribed to an article
-            ArrayList<SubscriberInfo> subscribers = articles.get(Article);
             byte[] message = Article.getBytes();
             for (SubscriberInfo sub : subscribers){
+                if (sentToAlready.contains(sub)) {
+                    continue;
+                }  // don't publish this to same subscriber multiple times
+                sentToAlready.add(sub);
+
                 try{
                     // Prepare packet and send to clients
                     InetAddress address = InetAddress.getByName(sub.GetIP());
                     DatagramPacket packet = new DatagramPacket(message, message.length, address, sub.GetPort());
                     socket.send(packet);
                 } catch(Exception e){
-                    System.out.printf("Error detected while publishing to client with IP Address: %s and Port Number: %d", sub.GetIP(), sub.GetPort());
+                    String errMsg =
+                        "Error detected while publishing to client with IP Address: %s and Port Number: %d";
+                    System.out.printf(errMsg, sub.GetIP(), sub.GetPort());
                     return false;
                 }
             }
         }
-        return false;
+        
+        return true;
     }
 
     private static boolean ArticleValidForPublish(String article){
@@ -322,6 +346,36 @@ implements PubSubServerInterface
         } catch (IOException e){
             e.printStackTrace();
         }
+    }
+
+    // helper returns subscription details string with no 3rd semicolon and no contents field 
+    private static String unparseSubscription(HashMap<String, String> subFields) {
+        return subFields.get("topic") + ";"
+        + subFields.get("originator") + ";"
+        + subFields.get("org");
+    }
+
+    // helper function that generates all subscription strings in the format
+    // topic;originator;org that are less equally or less specific than the argument
+    private static ArrayList<String> genLessSpecificSubs(String sub) {
+        HashMap<String, String> fields = parseArticle(sub);
+        ArrayList<String> comboList = new ArrayList<>();
+        comboList.add(fields.get("topic") + ";" + fields.get("originator")
+            + ";"+ fields.get("org"));  // orignial subscription field set
+        comboList.add(fields.get("topic") + ";" + fields.get("originator") + ";");
+        comboList.add(";" + fields.get("originator") + ";" + fields.get("org"));
+        comboList.add(fields.get("topic") + ";;" + fields.get("org"));
+        comboList.add(fields.get("topic") + ";;");
+        comboList.add(";" + fields.get("originator") + ";");
+        comboList.add(";;" + fields.get("org"));
+
+        // remove all fields that generated to the trivial ";;"
+        for (int i = comboList.size() - 1; i >=0; i--) {
+            if (comboList.get(i).equals(";;")) {
+                comboList.remove(i);
+            }
+        }
+        return comboList;
     }
 
     public static void main(String args[]) throws RemoteException, MalformedURLException
