@@ -280,7 +280,15 @@ implements PubSubServerInterface
     
     public boolean Ping() throws RemoteException
     {
-        return true;
+        boolean reachable = false;
+        try {
+            InetAddress address = socket.getInetAddress();
+            reachable = address.isReachable(5000);
+            System.out.println(address + " is reachable: " + reachable);
+          } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+          }
+            return reachable;
     }
 
     private static void HandleClientRequest(String clientRequest, String address, PubSubServerInterface ContentSrv) throws RemoteException{
