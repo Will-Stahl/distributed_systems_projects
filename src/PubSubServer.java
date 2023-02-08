@@ -15,8 +15,10 @@ implements PubSubServerInterface
     
     private ArrayList<SubscriberInfo> Subscribers;
     private HashMap<String, ArrayList<SubscriberInfo>> articles;
-    private DatagramSocket socket;
-    private final int PORT_NUMBER = 1099;
+    private final static int PORT_NUMBER = 1099;
+    private static DatagramSocket socket;
+    private final int MAX_CLIENTS = 10;
+    private static int clientCount = 0;
 
     public PubSubServer() throws RemoteException, IOException
     {
@@ -35,6 +37,11 @@ implements PubSubServerInterface
      */
     public boolean Join(String IP, int Port) throws RemoteException
     {
+        if (clientCount > MAX_CLIENTS) {
+            System.out.println("Server Capacity reached! Please try joining again later");
+            return false;
+        }
+
         if (Port > 65535 || Port < 0) {
             System.out.print("Client sent invalid port number\n");
             return false;
@@ -129,6 +136,7 @@ implements PubSubServerInterface
                         return false;
                     }
                     articles.get(Article).add(sub);
+                    System.out.printf("Client with IP Address %s has subscribed to Article %s.",IP, Article);
                     return true;
                 }
             }
@@ -159,6 +167,7 @@ implements PubSubServerInterface
             for(int i = 0; i < subscribers.size(); i++){
                 SubscriberInfo sub = subscribers.get(i);
                 if (sub.GetIP() == IP && sub.GetPort() == Port){
+                    System.out.printf("Client with IP Address %s has unsubscribed from Article %s.",IP, Article);
                     subscribers.remove(i);
                     return true;
                 }
@@ -274,14 +283,55 @@ implements PubSubServerInterface
         return true;
     }
 
-    public static void main(String args[])
-    throws RemoteException, MalformedURLException
+    private static void HandleClientRequest(String clientRequest, String address, PubSubServerInterface ContentSrv) throws RemoteException{
+        try{
+            while(true){
+                if (clientRequest.startsWith("join")){
+                    clientCount += 1;
+                    ContentSrv.Join(address, PORT_NUMBER);
+                } else if (clientRequest.startsWith("leave") && clientCount > 0){
+                    clientCount -= 1;
+                    ContentSrv.Leave(address, PORT_NUMBER);
+                } else if (clientRequest.startsWith("publish:")){
+                    String[] words = clientRequest.split(":");
+                    ContentSrv.Publish(words[1].trim(), address, PORT_NUMBER);
+                } else if (clientRequest.startsWith("subscribe:")){
+                    String[] words = clientRequest.split(":");
+                    ContentSrv.Subscribe(address, PORT_NUMBER, words[2].trim());
+                } else if (clientRequest.startsWith("unsubscribe:")){
+                    String[] words = clientRequest.split(":");
+                    ContentSrv.Unsubscribe(address, PORT_NUMBER, words[2].trim());
+                } else if (clientRequest.startsWith("ping")){
+                    ContentSrv.Ping();
+                }
+            }
+        } catch (RemoteException e){
+            e.printStackTrace();
+        }
+    }
+
+    private static void ProcessRequestFromClient(PubSubServerInterface ContentSrv) throws IOException{
+        try{
+            byte[] request = new byte[1024];
+            DatagramPacket packet = new DatagramPacket(request, request.length);
+            socket.receive(packet);
+            String address = packet.getAddress().getHostAddress();
+            String clientRequest = new String(packet.getData(), 0, packet.getLength());
+            System.out.println("Request from client: " + clientRequest);
+            HandleClientRequest(clientRequest, address, ContentSrv);
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String args[]) throws RemoteException, MalformedURLException
     {
         try{
-            LocateRegistry.createRegistry(1099);
+            LocateRegistry.createRegistry(PORT_NUMBER);
             PubSubServerInterface ContentSrv = new PubSubServer();
             Naming.rebind("server.PubSubServer", ContentSrv);
             System.out.println("Publish-Subscribe Server is ready.");
+            ProcessRequestFromClient(ContentSrv);
         } catch(Exception e) {
             e.printStackTrace();
         }
