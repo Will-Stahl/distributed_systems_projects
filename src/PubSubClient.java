@@ -42,7 +42,7 @@ public class PubSubClient {
 
     private static boolean ValidPublishSubOrUnSubCommandFormat(String clientRequest){
         String [] words = clientRequest.split(":");
-        return (words.length == 2) && (words[0] == "publish:" || words[0] == "subscribe" || words[0] == "unsubscribe");
+        return (words.length == 2) && (words[0] == "publish:" || words[0] == "subscribe:" || words[0] == "unsubscribe:");
     }
 
     private static void SendClientRequestToServer(DatagramSocket socket, InetAddress address){
