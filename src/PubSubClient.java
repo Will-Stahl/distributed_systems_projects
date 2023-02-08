@@ -24,7 +24,7 @@ public class PubSubClient {
             System.out.println("Enter your request to the server:");
             clientRequest = sc.nextLine();
             String[] words = clientRequest.trim().split(" ");
-            if(validRequestType.contains(words[0].toLowerCase())) break;
+            if (validRequestType.contains(words[0].toLowerCase())) break;
             System.out.println("Error in request! Requests must start with one of the following operations (not case sensitive): Join, Leave, Publish, Subscribe, Unsubscribe, Ping");
         }
         sc.close();
@@ -42,18 +42,16 @@ public class PubSubClient {
         }
     }
 
-    private static String processClientResponseFromServer(DatagramSocket socket, InetAddress address){
-        String response = "";
+    private static void processClientResponseFromServer(DatagramSocket socket, InetAddress address){
         try{
             byte[] serverResponse = new byte[1024];
             DatagramPacket packet = new DatagramPacket(serverResponse, serverResponse.length);
             socket.receive(packet);
-            response = new String(packet.getData(), 0, packet.getLength());
-            return response;
+            String response = new String(packet.getData(), 0, packet.getLength());
+            System.out.println("Response from server: " + response);
         } catch (IOException e){
             e.printStackTrace();
         }
-        return response;
     }
 
     public static void main(String[] args) throws IOException{
@@ -63,7 +61,7 @@ public class PubSubClient {
             PubSubServer server = (PubSubServer) registry.lookup("server.PubSubServer");
             DatagramSocket socket = new DatagramSocket();
             InetAddress address = InetAddress.getByName(hostName);
-
+            
             // Thread for sending client requests to server
             new Thread(new Runnable(){
                 @Override
@@ -79,8 +77,7 @@ public class PubSubClient {
                 @Override
                 public void run(){
                     while (true){
-                        String response = processClientResponseFromServer(socket, address);
-                        System.out.println("Response from server: " + response);
+                        processClientResponseFromServer(socket, address);
                     }
                 }
             }).start();
