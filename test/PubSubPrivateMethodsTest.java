@@ -44,6 +44,17 @@ public class PubSubPrivateMethodsTest {
         return true;
     }
 
+    private static boolean ValidPublishSubOrUnSubCommandFormat(String command){
+        String[] result = command.split(" ");
+        if(result[0].equalsIgnoreCase("publish:") && ArticleValidForPublish(result[1]) && result.length == 2){
+            return true;
+        } else if((result[0].equalsIgnoreCase("subscribe:") || result[0].equalsIgnoreCase("unsubscribe:")) && ArticleValidForSubscribeOrUnSub(result[1]) && result.length == 2){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     private static boolean FirstThreeFieldsEmpty(HashMap<String, String> articleMap){
         return (articleMap.get("type") == "") && 
                 (articleMap.get("originator") == "") && 
