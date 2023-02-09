@@ -6,6 +6,8 @@ import java.net.MalformedURLException;
 
 import java.util.Scanner;
 
+// class to manuall test basic functionality
+// unit tests are needed on top of this
 public class TestClient {
     public static void main(String[] args) throws RemoteException, MalformedURLException, NotBoundException {
         if (args.length < 1) {

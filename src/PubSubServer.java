@@ -325,7 +325,7 @@ implements PubSubServerInterface
     }
 
     // helper function that generates all subscription strings in the format
-    // topic;originator;org that are less equally or less specific than the argument
+    // topic;originator;org that are equally or less specific than the argument
     private static ArrayList<String> genLessSpecificSubs(String sub) {
         HashMap<String, String> fields = parseArticle(sub);
         ArrayList<String> comboList = new ArrayList<>();
