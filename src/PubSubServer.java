@@ -1,4 +1,3 @@
-import java.rmi.registry.LocateRegistry;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.net.MalformedURLException;
@@ -12,11 +11,10 @@ import java.util.*;
 public class PubSubServer extends UnicastRemoteObject
 implements PubSubServerInterface
 {
-    
     private ArrayList<SubscriberInfo> Subscribers;
     // subMap maps a list of subscribers to keys of subscription fields
     private HashMap<String, ArrayList<SubscriberInfo>> subMap;
-    private final static int PORT_NUMBER = 1099;
+    private final static int PORT_NUMBER = 8888;
     private static DatagramSocket socket;
     private final int MAX_CLIENTS = 10;
     private static int clientCount = 0;
@@ -25,7 +23,7 @@ implements PubSubServerInterface
     {
         Subscribers = new ArrayList<SubscriberInfo>();
         subMap = new HashMap<>();
-        socket = new DatagramSocket(PORT_NUMBER);
+        socket = new DatagramSocket();
     }
 
     /**
@@ -38,20 +36,21 @@ implements PubSubServerInterface
      */
     public boolean Join(String IP, int Port) throws RemoteException
     {
-        if (clientCount > MAX_CLIENTS) {
-            System.out.println("Server Capacity reached! Please try joining again later");
+        if (clientCount == MAX_CLIENTS) {
+
+            System.out.println("[SERVER]: Server Capacity reached! Please try joining again later.");
             return false;
         }
 
         if (Port > 65535 || Port < 0) {
-            System.out.print("Client sent invalid port number\n");
+            System.out.println("[SERVER]: Client port number is invalid and cannot be used for communication.");
             return false;
         }
 
         for (int i = 0; i < Subscribers.size(); i++) {
             SubscriberInfo Sub = Subscribers.get(i);
             if (Sub.GetIP().equals(IP) && Sub.GetPort() == Port) {
-                System.out.print("Client already joined\n");
+                System.out.println("[SERVER]: Client is already part of the group server.");
                 return false;
             }
         }
@@ -59,11 +58,11 @@ implements PubSubServerInterface
         // check for valid IP address
         if (IsValidIPAddress(IP)){
             Subscribers.add(new SubscriberInfo(IP, Port));
-            System.out.printf("Added new client with IP: %s, Port: %d\n", IP, Port);
+            System.out.printf("\n[SERVER]: Added new client with IP: %s, Port: %d\n", IP, Port);
             clientCount += 1;
             return true;
         }
-        System.out.println("Invalid IP Address");
+        System.out.println("[SERVER]: Invalid IP Address");
         return false;
     }
 
@@ -99,7 +98,7 @@ implements PubSubServerInterface
             }
         }
         if (subPtr == null) {
-            System.out.print("Client was not already joined\n");
+            System.out.printf("[SERVER]: Client at IP Address %s is and Port %d is not currently part of the server.\n", IP, Port);
             return false;
         }
         // Remove client from all subMap'ings as well
@@ -111,7 +110,7 @@ implements PubSubServerInterface
             }});
         
         clientCount -= 1;
-        System.out.print("Removed subscriber\n");
+        System.out.printf("[SERVER]: Removed client at address %s and Port %d.\n", IP, Port);
         return true;
     }
     
@@ -127,13 +126,14 @@ implements PubSubServerInterface
     public boolean Subscribe(String IP, int Port, String Article) throws RemoteException
     {
         if (!ArticleValidForSubscribeOrUnSub(Article)){
-            System.out.println("Article type not valid for subscribing.");
+            System.out.println("[SERVER]: Article type not valid for subscribing.");
             return false;
         }
 
         // If article has not been created earlier, then we should create it
         HashMap<String, String> subDetailsMap = parseArticle(Article);
         subDetailsMap.remove("contents");  // don't put a blank field in
+
         String subscriptionDetails = unparseSubscription(subDetailsMap);
         if (!subMap.containsKey(subscriptionDetails)){
             subMap.put(subscriptionDetails, new ArrayList<SubscriberInfo>());
@@ -141,17 +141,18 @@ implements PubSubServerInterface
 
         // Add current client to the article subscriber list
         for (SubscriberInfo sub : Subscribers){
-            if (sub.GetIP() == IP && sub.GetPort() == Port){
+            if (sub.GetIP().equals(IP) && sub.GetPort() == Port){
                 if (subMap.get(subscriptionDetails).contains(sub)) {
                     // may not need to return false here, but don't duplicate subscriptions
+                    System.out.println("[SERVER]: Client has already subscribed to this article in the past.");
                     return false;
                 }
                 subMap.get(subscriptionDetails).add(sub);
-                System.out.printf("Client with IP Address %s has subscribed to Article %s.",IP, Article);
+                System.out.printf("[SERVER]: Client at Port Number %d has subscribed to Article: \"%s\".\n", Port, Article);
                 return true;
             }
         }
-        System.out.println("Client's IP address and Port no. not found on server");
+        System.out.println("[SERVER]: Client's IP address and Port no. not found on server.");
         return false;
     }
     
@@ -166,6 +167,7 @@ implements PubSubServerInterface
     public boolean Unsubscribe(String IP, int Port, String Article) throws RemoteException
     {
         if (!ArticleValidForSubscribeOrUnSub(Article)){
+            System.out.println("[SERVER]: Article type not valid for unsubscribing.");
             return false;
         }
 
@@ -174,7 +176,7 @@ implements PubSubServerInterface
         String subscriptionDetails = unparseSubscription(subDetailsMap);
         if (!subMap.containsKey(subscriptionDetails)){
             // If the article hasn't been published earlier, then return false
-            System.out.println("Article does not exist and cannot be unsubscribed from");
+            System.out.printf("[SERVER]: Article \"%s\" does not exist and cannot be unsubscribed from.\n", Article);
             return false;
         }
 
@@ -182,13 +184,13 @@ implements PubSubServerInterface
         ArrayList<SubscriberInfo> leavingFrom = subMap.get(subscriptionDetails);
         for(int i = 0; i < leavingFrom.size(); i++){
             SubscriberInfo sub = leavingFrom.get(i);
-            if (sub.GetIP() == IP && sub.GetPort() == Port){
-                System.out.printf("Client with IP Address %s has unsubscribed from Article %s.",IP, Article);
+            if (sub.GetIP().equals(IP) && sub.GetPort() == Port){
+                System.out.printf("[SERVER]: Client with IP Address %s has unsubscribed from Article \"%s\".\n",IP, Article);
                 leavingFrom.remove(i);
                 return true;
             }
         }
-        System.out.println("Client wasn't subscribed to article.");
+        System.out.printf("[SERVER]: Client with IP Address %s is not currently subscribed to Article \"%s\".", IP, Article);
         return false;
     }
     
@@ -202,8 +204,8 @@ implements PubSubServerInterface
      */
     public boolean Publish(String Article, String IP, int Port) throws RemoteException
     {
-        if (ArticleValidForPublish(Article)){
-            System.out.println("Article format not valid for publishing.");
+        if (!ArticleValidForPublish(Article)){
+            System.out.println("[SERVER]: Article format not valid for publishing.");
             return false;
         }
         // list containing subscription fields combination from Article
@@ -223,36 +225,45 @@ implements PubSubServerInterface
                     continue;
                 }  // don't publish this to same subscriber multiple times
                 sentToAlready.add(sub);
-
                 try{
                     // Prepare packet and send to clients
                     InetAddress address = InetAddress.getByName(sub.GetIP());
                     DatagramPacket packet = new DatagramPacket(message, message.length, address, sub.GetPort());
                     socket.send(packet);
                 } catch(Exception e){
+                    e.printStackTrace();
                     String errMsg =
-                        "Error detected while publishing to client with IP Address: %s and Port Number: %d";
+                        "[SERVER]: Error detected while publishing to client with IP Address: %s and Port Number: %d";
                     System.out.printf(errMsg, sub.GetIP(), sub.GetPort());
                     return false;
                 }
             }
         }
-        
         return true;
     }
 
     private static boolean ArticleValidForPublish(String article){
+        // A correct article format has 3 semicolons, so that check should be done first
+        if (article.chars().filter(ch -> ch == ';').count() != 3){
+            return false;
+        }
         // Return false if article format is like ";;;contents" or "contents" field is missing
         HashMap<String, String> articleMap = parseArticle(article);
-        if (FirstThreeFieldsEmpty(articleMap) || articleMap.get("contents") == "") return false;
+        if (FirstThreeFieldsEmpty(articleMap) || articleMap.get("contents") == "") {
+            return false;
+        }
 
         return true;
     }
 
     private static boolean ArticleValidForSubscribeOrUnSub(String article){
+        // A correct article format has 3 semicolons, so that check should be done first
+        if (article.chars().filter(ch -> ch == ';').count() != 3){
+            return false;
+        }
         Set<String> types = new HashSet<>(Arrays.asList("Sports", "Lifestyle", "Entertainment", "Business", "Technology",
                                                         "Science", "Politics" ,"Health"));
-
+    
         // Check if Type, Originator and Org fields are all empty. 
         HashMap<String, String> articleMap = parseArticle(article);
 
@@ -308,9 +319,11 @@ implements PubSubServerInterface
     {
         boolean reachable = false;
         try {
+            DatagramSocket socket = new DatagramSocket(PORT_NUMBER);
             InetAddress address = socket.getInetAddress();
             reachable = address.isReachable(5000);
             System.out.println(address + " is reachable: " + reachable);
+            socket.close();
           } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
           }
@@ -319,7 +332,7 @@ implements PubSubServerInterface
 
     // helper returns subscription details string with no 3rd semicolon and no contents field 
     private static String unparseSubscription(HashMap<String, String> subFields) {
-        return subFields.get("topic") + ";"
+        return subFields.get("type") + ";"
         + subFields.get("originator") + ";"
         + subFields.get("org");
     }
@@ -329,12 +342,12 @@ implements PubSubServerInterface
     private static ArrayList<String> genLessSpecificSubs(String sub) {
         HashMap<String, String> fields = parseArticle(sub);
         ArrayList<String> comboList = new ArrayList<>();
-        comboList.add(fields.get("topic") + ";" + fields.get("originator")
+        comboList.add(fields.get("type") + ";" + fields.get("originator")
             + ";"+ fields.get("org"));  // orignial subscription field set
-        comboList.add(fields.get("topic") + ";" + fields.get("originator") + ";");
+        comboList.add(fields.get("type") + ";" + fields.get("originator") + ";");
         comboList.add(";" + fields.get("originator") + ";" + fields.get("org"));
-        comboList.add(fields.get("topic") + ";;" + fields.get("org"));
-        comboList.add(fields.get("topic") + ";;");
+        comboList.add(fields.get("type") + ";;" + fields.get("org"));
+        comboList.add(fields.get("type") + ";;");
         comboList.add(";" + fields.get("originator") + ";");
         comboList.add(";;" + fields.get("org"));
 
@@ -350,7 +363,6 @@ implements PubSubServerInterface
     public static void main(String args[]) throws RemoteException, MalformedURLException
     {
         try{
-            LocateRegistry.createRegistry(PORT_NUMBER);
             PubSubServerInterface ContentSrv = new PubSubServer();
             Naming.rebind("server.PubSubServer", ContentSrv);
             System.out.println("Publish-Subscribe Server is ready.");
