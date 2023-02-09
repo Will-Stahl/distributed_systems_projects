@@ -60,6 +60,7 @@ implements PubSubServerInterface
         if (IsValidIPAddress(IP)){
             Subscribers.add(new SubscriberInfo(IP, Port));
             System.out.printf("Added new client with IP: %s, Port: %d\n", IP, Port);
+            clientCount += 1;
             return true;
         }
         System.out.println("Invalid IP Address");
@@ -109,6 +110,7 @@ implements PubSubServerInterface
                     v.remove(fnlSubPtr);
             }});
         
+        clientCount -= 1;
         System.out.print("Removed subscriber\n");
         return true;
     }
@@ -315,47 +317,6 @@ implements PubSubServerInterface
             return reachable;
     }
 
-    private static void HandleClientRequest(String clientRequest, String address, PubSubServerInterface ContentSrv) throws RemoteException{
-        try{
-            while(true){
-                if (clientRequest.startsWith("join")){
-                    clientCount += 1;
-                    ContentSrv.Join(address, PORT_NUMBER);
-                } else if (clientRequest.startsWith("leave") && clientCount > 0){
-                    clientCount -= 1;
-                    ContentSrv.Leave(address, PORT_NUMBER);
-                } else if (clientRequest.startsWith("publish:")){
-                    String[] words = clientRequest.split(":");
-                    ContentSrv.Publish(words[1].trim(), address, PORT_NUMBER);
-                } else if (clientRequest.startsWith("subscribe:")){
-                    String[] words = clientRequest.split(":");
-                    ContentSrv.Subscribe(address, PORT_NUMBER, words[2].trim());
-                } else if (clientRequest.startsWith("unsubscribe:")){
-                    String[] words = clientRequest.split(":");
-                    ContentSrv.Unsubscribe(address, PORT_NUMBER, words[2].trim());
-                } else if (clientRequest.startsWith("ping")){
-                    ContentSrv.Ping();
-                }
-            }
-        } catch (RemoteException e){
-            e.printStackTrace();
-        }
-    }
-
-    private static void ProcessRequestFromClient(PubSubServerInterface ContentSrv) throws IOException{
-        try{
-            byte[] request = new byte[1024];
-            DatagramPacket packet = new DatagramPacket(request, request.length);
-            socket.receive(packet);
-            String address = packet.getAddress().getHostAddress();
-            String clientRequest = new String(packet.getData(), 0, packet.getLength());
-            System.out.println("Request from client: " + clientRequest);
-            HandleClientRequest(clientRequest, address, ContentSrv);
-        } catch (IOException e){
-            e.printStackTrace();
-        }
-    }
-
     // helper returns subscription details string with no 3rd semicolon and no contents field 
     private static String unparseSubscription(HashMap<String, String> subFields) {
         return subFields.get("topic") + ";"
@@ -393,7 +354,6 @@ implements PubSubServerInterface
             PubSubServerInterface ContentSrv = new PubSubServer();
             Naming.rebind("server.PubSubServer", ContentSrv);
             System.out.println("Publish-Subscribe Server is ready.");
-            ProcessRequestFromClient(ContentSrv);
         } catch(Exception e) {
             e.printStackTrace();
         }

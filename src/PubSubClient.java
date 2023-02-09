@@ -1,3 +1,4 @@
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.net.InetAddress;
@@ -45,15 +46,30 @@ public class PubSubClient {
         return (words.length == 2) && (words[0] == "publish:" || words[0] == "subscribe:" || words[0] == "unsubscribe:");
     }
 
-    private static void SendClientRequestToServer(DatagramSocket socket, InetAddress address){
+    private static void SendClientRequestToServer(PubSubServerInterface server, InetAddress address){
+        String IP = address.getHostAddress();
         try{
             String clientRequest = GetAndValidateClientRequest();
-            byte[] requestBuffer = clientRequest.getBytes();
-            DatagramPacket packet = new DatagramPacket(requestBuffer, requestBuffer.length, address, PORT_NUMBER);
-            socket.send(packet);
-        } catch (IOException e){
+            if (clientRequest.startsWith("join")){
+                server.Join(IP, PORT_NUMBER);
+            } else if (clientRequest.startsWith("leave")){
+                server.Leave(IP, PORT_NUMBER);
+            } else if (clientRequest.startsWith("publish:")){
+                String[] words = clientRequest.split(":");
+                server.Publish(words[1].trim(), IP, PORT_NUMBER);
+            } else if (clientRequest.startsWith("subscribe:")){
+                String[] words = clientRequest.split(":");
+                server.Subscribe(IP, PORT_NUMBER, words[1].trim());
+            } else if (clientRequest.startsWith("unsubscribe:")){
+                String[] words = clientRequest.split(":");
+                server.Unsubscribe(IP, PORT_NUMBER, words[1].trim());
+            } else if (clientRequest.startsWith("ping")){
+                server.Ping();
+            }
+        } catch (RemoteException e){
             e.printStackTrace();
         }
+        
     }
 
     private static void ProcessClientResponseFromServer(DatagramSocket socket, InetAddress address){
@@ -70,9 +86,13 @@ public class PubSubClient {
 
     public static void main(String[] args) throws IOException{
         try{
+            if (args.length < 1) {
+                System.out.print("Please provide a hostname as an argument.\n");
+                return;
+            }
             String hostName = args[0];
             Registry registry = LocateRegistry.getRegistry(hostName);
-            PubSubServer server = (PubSubServer) registry.lookup("server.PubSubServer");
+            PubSubServerInterface server = (PubSubServerInterface) registry.lookup("server.PubSubServer");
             DatagramSocket socket = new DatagramSocket();
             InetAddress address = InetAddress.getByName(hostName);
             
@@ -81,7 +101,7 @@ public class PubSubClient {
                 @Override
                 public void run(){
                     while (true){
-                        SendClientRequestToServer(socket, address);
+                        SendClientRequestToServer(server, address);
                     }
                 }
             }).start();
