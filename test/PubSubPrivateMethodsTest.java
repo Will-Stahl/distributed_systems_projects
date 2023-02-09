@@ -54,9 +54,9 @@ public class PubSubPrivateMethodsTest {
 
     private static boolean ValidPublishSubOrUnSubCommandFormat(String clientRequest){
         String [] words = clientRequest.split(":");
-        return (words.length == 2) && (words[0].equals("publish") || 
-                                        words[0].equals("subscribe") || 
-                                        words[0].equals("unsubscribe"));
+        return (words.length == 2) && (words[0].equalsIgnoreCase("publish") || 
+                                        words[0].equalsIgnoreCase("subscribe") || 
+                                        words[0].equalsIgnoreCase("unsubscribe"));
     }
 
     private static boolean FirstThreeFieldsEmpty(HashMap<String, String> articleMap){
@@ -197,5 +197,31 @@ public class PubSubPrivateMethodsTest {
 
         articleName = " ";
         Assert.assertFalse(ArticleValidForSubscribeOrUnSub(articleName));
+    }
+
+    // Check if command format is valid
+    @Test
+    public void CheckValidCommand(){
+        String command = "Publish: Science;Someone;UMN;contents";
+        Assert.assertTrue(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "SUBSCRIBE: Science;;UMN;";
+        Assert.assertTrue(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "unSubscRibe: Science;;UMN;";
+        Assert.assertTrue(ValidPublishSubOrUnSubCommandFormat(command));
+    }
+
+    // Check if command format is invalid
+    @Test
+    public void CheckInvalidCommand(){
+        String command = "pub: Science;Someone;UMN;contents";
+        Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "sub: Science;;UMN;";
+        Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "unsub: Science;;UMN;";
+        Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
     }
 }
