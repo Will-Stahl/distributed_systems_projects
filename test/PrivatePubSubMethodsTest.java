@@ -3,7 +3,7 @@
 import org.junit.*;
 import java.util.*;
 
-public class PubSubPrivateMethodsTest {
+public class PrivatePubSubMethodsTest {
     private boolean IsValidIPAddress(String IP) {
         String[] parts = IP.split("\\.");
 
@@ -17,17 +17,27 @@ public class PubSubPrivateMethodsTest {
     }
 
     private static boolean ArticleValidForPublish(String article){
+        // A correct article format has 3 semicolons, so that check should be done first
+        if (article.chars().filter(ch -> ch == ';').count() != 3){
+            return false;
+        }
         // Return false if article format is like ";;;contents" or "contents" field is missing
         HashMap<String, String> articleMap = parseArticle(article);
-        if (FirstThreeFieldsEmpty(articleMap) || articleMap.get("contents") == "") return false;
+        if (FirstThreeFieldsEmpty(articleMap) || articleMap.get("contents") == "") {
+            return false;
+        }
 
         return true;
     }
 
     private static boolean ArticleValidForSubscribeOrUnSub(String article){
+        // A correct article format has 3 semicolons, so that check should be done first
+        if (article.chars().filter(ch -> ch == ';').count() != 3){
+            return false;
+        }
         Set<String> types = new HashSet<>(Arrays.asList("Sports", "Lifestyle", "Entertainment", "Business", "Technology",
                                                         "Science", "Politics" ,"Health"));
-
+    
         // Check if Type, Originator and Org fields are all empty. 
         HashMap<String, String> articleMap = parseArticle(article);
 
@@ -44,15 +54,11 @@ public class PubSubPrivateMethodsTest {
         return true;
     }
 
-    private static boolean ValidPublishSubOrUnSubCommandFormat(String command){
-        String[] result = command.split(" ");
-        if(result[0].equalsIgnoreCase("publish:") && ArticleValidForPublish(result[1]) && result.length == 2){
-            return true;
-        } else if((result[0].equalsIgnoreCase("subscribe:") || result[0].equalsIgnoreCase("unsubscribe:")) && ArticleValidForSubscribeOrUnSub(result[1]) && result.length == 2){
-            return true;
-        } else {
-            return false;
-        }
+    private static boolean ValidPublishSubOrUnSubCommandFormat(String clientRequest){
+        String [] words = clientRequest.split(":");
+        return (words.length == 2) && (words[0].equalsIgnoreCase("publish") || 
+                                        words[0].equalsIgnoreCase("subscribe") || 
+                                        words[0].equalsIgnoreCase("unsubscribe"));
     }
 
     private static boolean FirstThreeFieldsEmpty(HashMap<String, String> articleMap){
@@ -193,5 +199,31 @@ public class PubSubPrivateMethodsTest {
 
         articleName = " ";
         Assert.assertFalse(ArticleValidForSubscribeOrUnSub(articleName));
+    }
+
+    // Check if command format is valid
+    @Test
+    public void CheckValidCommand(){
+        String command = "Publish: Science;Someone;UMN;contents";
+        Assert.assertTrue(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "SUBSCRIBE: Science;;UMN;";
+        Assert.assertTrue(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "unSubscRibe: Science;;UMN;";
+        Assert.assertTrue(ValidPublishSubOrUnSubCommandFormat(command));
+    }
+
+    // Check if command format is invalid
+    @Test
+    public void CheckInvalidCommand(){
+        String command = "pub: Science;Someone;UMN;contents";
+        Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "sub: Science;;UMN;";
+        Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "unsub: Science;;UMN;";
+        Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
     }
 }

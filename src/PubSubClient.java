@@ -8,62 +8,76 @@ import java.io.IOException;
 import java.util.*;
 
 public class PubSubClient {
-    final static int PORT_NUMBER = 1099;
+    final static int PORT_NUMBER = 8888;
+    private static DatagramSocket socket;
 
     private static void PrintWelcomeMessage(){
-        System.out.println("Before entering your request, please see the following rules for the 6 operations that can be performed (none of these are case sensitive): ");
-        System.out.println("Command for joining a server: Join");
-        System.out.println("Command for leaving a server: Leave");
-        System.out.println("Command for publishing to a server: \"Publish: <Article Name>\". For example: \"Publish: Sports;UMN;;contents\" ");
-        System.out.println("Command for subscribing to an article: \"Subscribe: <Article Name>\". For example: \"Subscribe: Sports;UMN;;\"");
-        System.out.println("Command for unsubscribing from an article: \"Unsubscribe: <Article Name>\". For example: \"Unsubscribe: Sports;UMN;;\"");
+        System.out.println("\nWelcome to the PubSub Client!");
+        System.out.println("Before entering your request, please see the following rules for the 6 operations that can be performed (none of these are case sensitive): \n");
+        System.out.println("1. Enter \"Join\" to join the group server");
+        System.out.println("2. Enter \"Leave\" to leave the group server");
+        System.out.println("3. Enter \"Publish\" to send a new article");
+        System.out.println("4. Enter \"Subscribe\" to request a subscription to the group server");
+        System.out.println("5. Enter \"Unsubscribe\" to request an unsubscribe to the group server");
     }
 
     private static String GetAndValidateClientRequest(){
         Scanner sc = new Scanner(System.in);
         String clientRequest = "";
-        PrintWelcomeMessage();
         while (true){
+            System.out.println("\nEnter command: ");
             clientRequest = sc.nextLine();
-            clientRequest = clientRequest.trim().toLowerCase();
+            String lowerCaseRequest = clientRequest.trim().toLowerCase();
 
             // If we have a join, leave or ping message, then we can simply break from the loop
-            if (clientRequest.startsWith("join") || clientRequest.startsWith("leave") || clientRequest.startsWith("ping")) break;
+            if (lowerCaseRequest.startsWith("join") || 
+                lowerCaseRequest.startsWith("leave") || 
+                lowerCaseRequest.startsWith("ping")){
+                    break;
+                }
 
             // If the publish, subscribe or unsubscribe command format is valid, then break; otherwise, ask for a correctly formatted input from the client(s).
-            if ((ValidPublishSubOrUnSubCommandFormat(clientRequest))) break;
-            else if (clientRequest.startsWith("publish:")) System.out.println("Invalid Publish Command format. Please use \"Publish: <Article Name>\"");
-            else if (clientRequest.startsWith("subscribe:")) System.out.println("Invalid Subscribe Command format. Please use \"Subscribe: <Article Name>\"");
-            else if (clientRequest.startsWith("unsubscribe:")) System.out.println("Invalid Unsubscribe Command format. Please use \"Unsubscribe: <Article Name>\"");
-            else System.out.println("Error in request! Requests must start with one of the following operations (not case sensitive): Join, Leave, Publish, Subscribe, Unsubscribe, Ping");
+            if (ValidPublishSubOrUnSubCommandFormat(lowerCaseRequest)) {
+                break;
+            } else if (lowerCaseRequest.startsWith("publish:")) {
+                System.out.println("Invalid Publish Command format. Please use \"Publish: <Article Name>\"");
+            } else if (lowerCaseRequest.startsWith("subscribe:")) {
+                System.out.println("Invalid Subscribe Command format. Please use \"Subscribe: <Article Name>\"");
+            } else if (lowerCaseRequest.startsWith("unsubscribe:")) {
+                System.out.println("Invalid Unsubscribe Command format. Please use \"Unsubscribe: <Article Name>\"");
+            } else {
+                System.out.println("Error in request! Requests must start with one of the following operations (not case sensitive): Join, Leave, Publish, Subscribe, Unsubscribe, Ping");
+            }
         }
-        sc.close();
         return clientRequest.trim();
     }
 
     private static boolean ValidPublishSubOrUnSubCommandFormat(String clientRequest){
         String [] words = clientRequest.split(":");
-        return (words.length == 2) && (words[0] == "publish:" || words[0] == "subscribe:" || words[0] == "unsubscribe:");
+        return (words.length == 2) && (words[0].equals("publish") || 
+                                        words[0].equals("subscribe") || 
+                                        words[0].equals("unsubscribe"));
     }
 
     private static void SendClientRequestToServer(PubSubServerInterface server, InetAddress address){
         String IP = address.getHostAddress();
+        String clientRequest = GetAndValidateClientRequest();
+        String lowerCaseRequest = clientRequest.toLowerCase();
         try{
-            String clientRequest = GetAndValidateClientRequest();
-            if (clientRequest.startsWith("join")){
+            if (lowerCaseRequest.startsWith("join")){
                 server.Join(IP, PORT_NUMBER);
-            } else if (clientRequest.startsWith("leave")){
+            } else if (lowerCaseRequest.startsWith("leave")){
                 server.Leave(IP, PORT_NUMBER);
-            } else if (clientRequest.startsWith("publish:")){
+            } else if (lowerCaseRequest.startsWith("publish:")){
                 String[] words = clientRequest.split(":");
                 server.Publish(words[1].trim(), IP, PORT_NUMBER);
-            } else if (clientRequest.startsWith("subscribe:")){
+            } else if (lowerCaseRequest.startsWith("subscribe:")){
                 String[] words = clientRequest.split(":");
                 server.Subscribe(IP, PORT_NUMBER, words[1].trim());
-            } else if (clientRequest.startsWith("unsubscribe:")){
+            } else if (lowerCaseRequest.startsWith("unsubscribe:")){
                 String[] words = clientRequest.split(":");
                 server.Unsubscribe(IP, PORT_NUMBER, words[1].trim());
-            } else if (clientRequest.startsWith("ping")){
+            } else if (lowerCaseRequest.startsWith("ping")){
                 server.Ping();
             }
         } catch (RemoteException e){
@@ -72,14 +86,17 @@ public class PubSubClient {
         
     }
 
-    private static void ProcessClientResponseFromServer(DatagramSocket socket, InetAddress address){
+    private static void ProcessClientResponseFromServer(InetAddress address){
+        byte[] serverResponse = new byte[1024];
         try{
-            byte[] serverResponse = new byte[1024];
+            socket = new DatagramSocket(PORT_NUMBER);
             DatagramPacket packet = new DatagramPacket(serverResponse, serverResponse.length);
-            socket.receive(packet);
-            String response = new String(packet.getData(), 0, packet.getLength());
-            System.out.println("Response from server: " + response);
-        } catch (IOException e){
+            while(true){
+                socket.receive(packet);
+                String response = new String(packet.getData(), 0, packet.getLength());
+                System.out.println("Response from server: " + response);
+            }
+        } catch (Exception e){
             e.printStackTrace();
         }
     }
@@ -93,28 +110,30 @@ public class PubSubClient {
             String hostName = args[0];
             Registry registry = LocateRegistry.getRegistry(hostName);
             PubSubServerInterface server = (PubSubServerInterface) registry.lookup("server.PubSubServer");
-            DatagramSocket socket = new DatagramSocket();
-            InetAddress address = InetAddress.getByName(hostName);
             
-            // Thread for sending client requests to server
-            new Thread(new Runnable(){
-                @Override
-                public void run(){
-                    while (true){
-                        SendClientRequestToServer(server, address);
-                    }
-                }
-            }).start();
+            InetAddress address = InetAddress.getByName(hostName);
+            PrintWelcomeMessage();
 
             // Thread for receiving subscribed articles back from the server
             new Thread(new Runnable(){
                 @Override
                 public void run(){
-                    while (true){
-                        ProcessClientResponseFromServer(socket, address);
+                    while(true){
+                        ProcessClientResponseFromServer(address);
                     }
                 }
             }).start();
+
+            // Thread for sending client requests to server
+            new Thread(new Runnable(){
+                @Override
+                public void run(){
+                    while(true){
+                        SendClientRequestToServer(server, address);
+                    }
+                }
+            }).start();
+
         } catch (Exception e){
             System.err.println("Client Exception: " + e.toString());
         }
