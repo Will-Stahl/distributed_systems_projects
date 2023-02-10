@@ -360,11 +360,15 @@ implements PubSubServerInterface
         return comboList;
     }
 
-    public static void main(String args[]) throws RemoteException, MalformedURLException
+    public static void main(String[] args) throws RemoteException, MalformedURLException
     {
+        String binding = "PubSubServer";
+        if (args.length > 0) {
+            binding = args[0];
+        }
         try{
             PubSubServerInterface ContentSrv = new PubSubServer();
-            Naming.rebind("server.PubSubServer", ContentSrv);
+            Naming.rebind("server." + binding, ContentSrv);
             System.out.println("Publish-Subscribe Server is ready.");
         } catch(Exception e) {
             e.printStackTrace();
