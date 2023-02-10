@@ -377,6 +377,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
             System.out.println("\nPublish-Subscribe Server is ready.");
         } catch(Exception e) {
             System.out.println("Error occurred while trying to start server. Exiting...");
+            System.exit(1);
         }
     }
 }

@@ -15,7 +15,7 @@ public class RunTestClasses {
         System.out.println(result.wasSuccessful());
 
         // run test for public methods
-        Result result = JUnitCore.runClasses(PublicPubSubMethodsTest.class);
+        result = JUnitCore.runClasses(PublicPubSubMethodsTest.class);
 
         for (Failure failure : result.getFailures()) {
            System.out.println(failure.toString());
