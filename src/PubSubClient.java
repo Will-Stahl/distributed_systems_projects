@@ -8,50 +8,76 @@ import java.io.IOException;
 import java.util.*;
 
 public class PubSubClient {
-    private static int PORT_NUMBER;
+    private static int port;
     private static DatagramSocket socket;
+    final private static int MAXSTRING = 120;
+    private static Set<String> subscribedArticles = new HashSet<>();;
 
     private static void SetRandomPortNumber(){
         Random rand = new Random();
-        PORT_NUMBER = (rand.nextInt((65535 - 1024) + 1)) + 1024;
+        port = (rand.nextInt((65535 - 1024) + 1)) + 1024;
     }
 
     private static void PrintWelcomeMessage(){
         System.out.println("\nWelcome to the PubSub Client!");
         System.out.println("Before entering your request, please see the following rules for the 6 operations that can be performed (none of these are case sensitive): \n");
-        System.out.println("1. Enter \"Join\" to join the group server");
-        System.out.println("2. Enter \"Leave\" to leave the group server");
-        System.out.println("3. Enter \"Publish\" to send a new article");
-        System.out.println("4. Enter \"Subscribe\" to request a subscription to the group server");
-        System.out.println("5. Enter \"Unsubscribe\" to request an unsubscribe to the group server");
+        DisplayOptions();
+    }
+
+    private static void DisplayOptions(){
+        System.out.println("1. Enter \"Join\" to join the group server.");
+        System.out.println("2. Enter \"Leave\" to leave the group server.");
+        System.out.println("3. Enter \"Publish\" to send a new article.");
+        System.out.println("4. Enter \"Subscribe\" to request a subscription to the group server.");
+        System.out.println("5. Enter \"Unsubscribe\" to request an unsubscribe to the group server.");
+        System.out.println("6: Enter \"Display\" to display subscribed articles.");
+    }
+
+    private static void DisplaySubscribedArticles(){
+        System.out.println("\n[CLIENT]: Client is subscribed to the following article(s): \n");
+        Iterator<String> it = subscribedArticles.iterator();
+        int count = 1;
+        while (it.hasNext()) {
+            System.out.printf("[CLIENT]: Article #%d: %s\n", count, it.next());
+            count += 1;
+        }
     }
 
     private static String GetAndValidateClientRequest(){
         Scanner sc = new Scanner(System.in);
         String clientRequest = "";
         while (true){
-            System.out.println("\nEnter command: ");
+            System.out.println("\n[CLIENT]: Enter command: ");
             clientRequest = sc.nextLine();
             String lowerCaseRequest = clientRequest.trim().toLowerCase();
 
-            // If we have a join, leave or ping message, then we can simply break from the loop
-            if (lowerCaseRequest.startsWith("join") || 
-                lowerCaseRequest.startsWith("leave") || 
-                lowerCaseRequest.startsWith("ping")){
-                    break;
+            if (lowerCaseRequest.startsWith("display")) {
+                if (subscribedArticles.size() == 0){
+                    System.out.println("[CLIENT]: Client is not currently subscribed to any articles.");
                 }
+                else{
+                    DisplaySubscribedArticles();
+                }
+                break;
+            }
+
+            // If we have a join, leave or ping message, then we can simply break from the loop
+            if (lowerCaseRequest.startsWith("join") ||  lowerCaseRequest.startsWith("leave")){
+                break;
+            }
 
             // If the publish, subscribe or unsubscribe command format is valid, then break; otherwise, ask for a correctly formatted input from the client(s).
             if (ValidPublishSubOrUnSubCommandFormat(lowerCaseRequest)) {
                 break;
             } else if (lowerCaseRequest.startsWith("publish:")) {
-                System.out.println("Invalid Publish Command format. Please use \"Publish: <Article Name>\"");
+                System.out.println("[CLIENT]: Invalid Publish Command format. Please use \"Publish: <Article Name>\"");
             } else if (lowerCaseRequest.startsWith("subscribe:")) {
-                System.out.println("Invalid Subscribe Command format. Please use \"Subscribe: <Article Name>\"");
+                System.out.println("[CLIENT]: Invalid Subscribe Command format. Please use \"Subscribe: <Article Name>\"");
             } else if (lowerCaseRequest.startsWith("unsubscribe:")) {
-                System.out.println("Invalid Unsubscribe Command format. Please use \"Unsubscribe: <Article Name>\"");
+                System.out.println("[CLIENT]: Invalid Unsubscribe Command format. Please use \"Unsubscribe: <Article Name>\"");
             } else {
-                System.out.println("Error in request! Requests must start with one of the following operations (not case sensitive): Join, Leave, Publish, Subscribe, Unsubscribe, Ping");
+                System.out.println("\nOnly the following 6 operations can be performed by the client:");
+                DisplayOptions();
             }
         }
         return clientRequest.trim();
@@ -70,52 +96,57 @@ public class PubSubClient {
         String lowerCaseRequest = clientRequest.toLowerCase();
         try{
             if (lowerCaseRequest.startsWith("join")){
-                server.Join(IP, PORT_NUMBER);
+                server.Join(IP, port);
             } else if (lowerCaseRequest.startsWith("leave")){
-                server.Leave(IP, PORT_NUMBER);
+                server.Leave(IP, port);
             } else if (lowerCaseRequest.startsWith("publish:")){
                 String[] words = clientRequest.split(":");
-                server.Publish(words[1].trim(), IP, PORT_NUMBER);
+                server.Publish(words[1].trim(), IP, port);
             } else if (lowerCaseRequest.startsWith("subscribe:")){
                 String[] words = clientRequest.split(":");
-                server.Subscribe(IP, PORT_NUMBER, words[1].trim());
+                server.Subscribe(IP, port, words[1].trim());
             } else if (lowerCaseRequest.startsWith("unsubscribe:")){
                 String[] words = clientRequest.split(":");
-                server.Unsubscribe(IP, PORT_NUMBER, words[1].trim());
-            } else if (lowerCaseRequest.startsWith("ping")){
-                server.Ping();
+                server.Unsubscribe(IP, port, words[1].trim());
             }
         } catch (RemoteException e){
-            e.printStackTrace();
+            System.out.println("[CLIENT]: No response from server since it is offline. Exiting...");
+            System.exit(0);
         }
         
     }
 
     private static void ProcessClientResponseFromServer(InetAddress address){
-        byte[] serverResponse = new byte[1024];
+        byte[] serverResponse = new byte[MAXSTRING];
         try{
-            socket = new DatagramSocket(PORT_NUMBER);
+            socket = new DatagramSocket(port);
             DatagramPacket packet = new DatagramPacket(serverResponse, serverResponse.length);
             while(true){
                 socket.receive(packet);
                 String response = new String(packet.getData(), 0, packet.getLength());
-                System.out.println("Response from server: " + response);
+                System.out.println("[CLIENT]: Response from server: " + response);
+                subscribedArticles.add(response);
             }
         } catch (Exception e){
-            e.printStackTrace();
+            System.out.println("[CLIENT]: Socket error occured. Please restart Client. Exiting...");
+            System.exit(0);
         }
     }
 
     public static void main(String[] args) throws IOException{
         try{
             if (args.length < 1) {
-                System.out.print("Please provide a hostname as an argument.\n");
+                System.out.print("[CLIENT]: Please provide a hostname as an argument.\n");
                 return;
             }
             SetRandomPortNumber();
             String hostName = args[0];
             Registry registry = LocateRegistry.getRegistry(hostName);
             PubSubServerInterface server = (PubSubServerInterface) registry.lookup("server.PubSubServer");
+
+            // Periodically ping server to check if it is live.
+            Timer timer = new Timer();
+            timer.schedule(new PingServer(server), 0, 10000);
             
             InetAddress address = InetAddress.getByName(hostName);
             PrintWelcomeMessage();
@@ -141,7 +172,24 @@ public class PubSubClient {
             }).start();
 
         } catch (Exception e){
-            System.err.println("Client Exception: " + e.toString());
+            System.err.println("[CLIENT]: Client Exception Occurred. Please restart client! Exiting now...");
+        }
+    }
+}
+
+class PingServer extends TimerTask{
+    private PubSubServerInterface server;
+
+    PingServer(PubSubServerInterface server){
+        this.server = server;
+    }
+
+    public void run(){
+        try{
+            server.Ping();
+        } catch (Exception e){
+            System.out.println("[CLIENT]: Server is offline! Exiting...");
+            System.exit(0);
         }
     }
 }

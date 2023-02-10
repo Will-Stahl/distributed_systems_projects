@@ -1,5 +1,7 @@
 import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.net.MalformedURLException;
 import java.rmi.server.UnicastRemoteObject;
 import java.net.DatagramPacket;
@@ -13,7 +15,6 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     private ArrayList<SubscriberInfo> Subscribers;
     // subMap maps a list of subscribers to keys of subscription fields
     private HashMap<String, ArrayList<SubscriberInfo>> subMap;
-    private final static int PORT_NUMBER = 8888;
     private static DatagramSocket socket;
     private final int MAX_CLIENTS = 5;
     private static int clientCount = 0;
@@ -237,10 +238,10 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
                     InetAddress address = InetAddress.getByName(sub.GetIP());
                     DatagramPacket packet = new DatagramPacket(message, message.length, address, sub.GetPort());
                     socket.send(packet);
+                    System.out.printf("[SERVER]: Sent article %s to client with IP Address: %s and Port Number: %d\n", Article, sub.GetIP(), sub.GetPort());
                 } catch(Exception e){
-                    e.printStackTrace();
                     String errMsg =
-                        "[SERVER]: Error detected while publishing to client with IP Address: %s and Port Number: %d";
+                        "[SERVER]: Error detected while publishing to client with IP Address: %s and Port Number: %d\n";
                     System.out.printf(errMsg, sub.GetIP(), sub.GetPort());
                     return false;
                 }
@@ -324,17 +325,14 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     
     public boolean Ping() throws RemoteException
     {
-        boolean reachable = false;
-        try {
-            DatagramSocket socket = new DatagramSocket(PORT_NUMBER);
-            InetAddress address = socket.getInetAddress();
-            reachable = address.isReachable(5000);
-            System.out.println(address + " is reachable: " + reachable);
-            socket.close();
-          } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-          }
-            return reachable;
+        try{
+            Registry registry = LocateRegistry.getRegistry("localhost");
+            PubSubServerInterface server = (PubSubServerInterface) registry.lookup("server.PubSubServer");
+            System.out.println("[SERVER]: Client pinged server. Server is online.");
+            return true;
+        } catch (Exception e){
+            return false;
+        }
     }
 
     // helper returns subscription details string with no 3rd semicolon and no contents field 
@@ -372,9 +370,9 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         try{
             PubSubServerInterface ContentSrv = new PubSubServer();
             Naming.rebind("server.PubSubServer", ContentSrv);
-            System.out.println("Publish-Subscribe Server is ready.");
+            System.out.println("\nPublish-Subscribe Server is ready.");
         } catch(Exception e) {
-            e.printStackTrace();
+            System.out.println("Error occurred while trying to start server. Exiting...");
         }
     }
 }
