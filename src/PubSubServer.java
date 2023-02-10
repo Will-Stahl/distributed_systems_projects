@@ -8,16 +8,16 @@ import java.net.InetAddress;
 import java.io.IOException;
 import java.util.*;
 
-public class PubSubServer extends UnicastRemoteObject
-implements PubSubServerInterface
+public class PubSubServer extends UnicastRemoteObject implements PubSubServerInterface
 {
     private ArrayList<SubscriberInfo> Subscribers;
     // subMap maps a list of subscribers to keys of subscription fields
     private HashMap<String, ArrayList<SubscriberInfo>> subMap;
     private final static int PORT_NUMBER = 8888;
     private static DatagramSocket socket;
-    private final int MAX_CLIENTS = 10;
+    private final int MAX_CLIENTS = 5;
     private static int clientCount = 0;
+    private static Set<Integer> portsCurrentlyInUse = new HashSet<>();
 
     public PubSubServer() throws RemoteException, IOException
     {
@@ -36,6 +36,13 @@ implements PubSubServerInterface
      */
     public boolean Join(String IP, int Port) throws RemoteException
     {
+        // In the off chance that the random port generated is currently in use, we should prompt the user to try joining again.
+        if (portsCurrentlyInUse.contains(Port)){
+            System.out.println("This port is currently in use. Please try joining again to attempt connecting to a different port.");
+            return false;
+        }
+
+        // If server is at max capacity, then prompt user to try joining again at a later time.
         if (clientCount == MAX_CLIENTS) {
 
             System.out.println("[SERVER]: Server Capacity reached! Please try joining again later.");

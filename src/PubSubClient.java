@@ -8,8 +8,13 @@ import java.io.IOException;
 import java.util.*;
 
 public class PubSubClient {
-    final static int PORT_NUMBER = 8888;
+    private static int PORT_NUMBER;
     private static DatagramSocket socket;
+
+    private static void SetRandomPortNumber(){
+        Random rand = new Random();
+        PORT_NUMBER = (rand.nextInt((65535 - 1024) + 1)) + 1024;
+    }
 
     private static void PrintWelcomeMessage(){
         System.out.println("\nWelcome to the PubSub Client!");
@@ -107,13 +112,14 @@ public class PubSubClient {
                 System.out.print("Please provide a hostname as an argument.\n");
                 return;
             }
+            SetRandomPortNumber();
             String hostName = args[0];
             Registry registry = LocateRegistry.getRegistry(hostName);
             PubSubServerInterface server = (PubSubServerInterface) registry.lookup("server.PubSubServer");
             
             InetAddress address = InetAddress.getByName(hostName);
             PrintWelcomeMessage();
-
+            
             // Thread for receiving subscribed articles back from the server
             new Thread(new Runnable(){
                 @Override
