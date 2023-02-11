@@ -217,6 +217,18 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
      */
     public boolean Publish(String Article, String IP, int Port) throws RemoteException
     {
+        boolean publisherJoined = false;
+        // clients must Join() before they publish
+        for (SubscriberInfo sub : Subscribers) {
+            if (sub.GetIP().equals(IP) && sub.GetPort() == Port) {
+                publisherJoined = true;
+            }
+        }
+        if (!publisherJoined) {
+            System.out.println("[SERVER]: Client must Join() in order to Publish() content.");
+            return false;
+        }
+            
         if (!ArticleValidForPublish(Article)){
             System.out.println("[SERVER]: Article format not valid for publishing.");
             return false;
@@ -338,6 +350,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         } catch (Exception e){
             return false;
         }
+        // return true;
     }
 
     // overloaded Ping(), where the FULL server name must be passed in
@@ -391,7 +404,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         try{
             PubSubServerInterface ContentSrv = new PubSubServer();
             Naming.rebind("server." + binding, ContentSrv);
-            System.out.println("\nPublish-Subscribe Server is ready.");
+            System.out.println("\nPublish-Subscribe Server is ready as: " + binding);
         } catch(Exception e) {
             System.out.println("Error occurred while trying to start server. Exiting...");
             System.exit(1);

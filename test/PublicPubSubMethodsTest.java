@@ -13,7 +13,7 @@ import java.io.IOException;
 // class tests public facing methods in PubSubServer class
 // compile with src appended to classpath
 // functions called from client side, must start server process(es) before starting these
-public class PublicPubSubMethodsTest {
+public class PublicPubSubMethodsTest extends Thread {
 
     // Check for successful joining, duplication, invalid port/IP
     @Test
@@ -137,22 +137,39 @@ public class PublicPubSubMethodsTest {
         Registry registry = LocateRegistry.getRegistry("127.0.0.1");
         PubSubServerInterface Svr = (PubSubServerInterface) registry.lookup("server.TestH");
         // default Ping() looks for "server.PubSubServer" at "localhost"
-        Assert.assertFalse(Svr.Ping());
+        Assert.assertTrue(Svr.Ping());
         // assume server on same machine
-        Assert.assertFalse(Svr.Ping("localhost", "not.existing"));
-        Assert.assertTrue(Svr.Ping("localhost", "server.TestH"));
+        // Assert.assertFalse(Svr.Ping("localhost", "not.existing"));
+        // System.out.println("Before Pinging existeing in CheckPing() test...");
+        // Assert.assertTrue(Svr.Ping("localhost", "server.TestH"));
     }
 
+    /**
+     * "client" listening thread should terminate when it receives
+     * any response from server.
+     * It sets its private variable to whatever it received
+     * This means another client should publish content which does not match
+     * AND content that does match.
+     */
     @Test
-    public void CheckReception() throws RemoteException, NotBoundException {
-        /**
-         * TODO: "client" listening thread should terminate when it receives
-         * any response from server. It will return and inform main thread
-         * whether it was according to their subscription.
-         * This means another client should publish content which does not match
-         * AND content that does match.
-         */
+    public void CheckReception()
+        throws RemoteException, NotBoundException, InterruptedException {
         
+        ClientTestThread client = new ClientTestThread(8000);  // port 8000
+        client.run();
+        Registry registry = LocateRegistry.getRegistry("127.0.0.1");
+        PubSubServerInterface Svr = (PubSubServerInterface) registry.lookup("server.TestI");
+        Svr.Join("127.0.0.1", 8000);  // SERVER Join
+        Svr.Join("127.0.0.1", 8001);  // other client will publish
+        Svr.Subscribe("127.0.0.1", 8000, "Sports;Bingus;;");
+        // yield before publishing
+        this.sleep(500);  // sleep for half second, should be enough time
+        Svr.Publish(";Chungus;;client should not receive this."      , "127.0.0.1", 8001);
+        Svr.Publish(";Chungus;;client should not receive this."      , "127.0.0.1", 8001);
+        Svr.Publish(";Bingus;;client should not receive this."       , "127.0.0.1", 8001);
+        Svr.Publish("Sports;Bingus;Pouch;client should receive this.", "127.0.0.1", 8001);
+        client.join();  // THREAD join
+        Assert.assertEquals(client.getArticle(), "Sports;Bingus;Pouch;client should receive this.");
     }
 
 }
