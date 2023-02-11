@@ -163,7 +163,7 @@ public class PublicPubSubMethodsTest extends Thread {
         Svr.Join("127.0.0.1", 8001);  // other client will publish
         Svr.Subscribe("127.0.0.1", 8000, "Sports;Bingus;;");
         // yield before publishing
-        this.sleep(500);  // sleep for half second, should be enough time
+        // this.sleep(500);  // sleep for half second, should be enough time
         Svr.Publish(";Chungus;;client should not receive this."      , "127.0.0.1", 8001);
         Svr.Publish(";Chungus;;client should not receive this."      , "127.0.0.1", 8001);
         Svr.Publish(";Bingus;;client should not receive this."       , "127.0.0.1", 8001);

@@ -1,6 +1,7 @@
 import java.util.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.io.IOException;
 
 /**
  * class is a thread that has String value
@@ -17,15 +18,12 @@ class ClientTestThread extends Thread {
     // run() based off ProcessClientResponseFromServer() from PubSubClient.java
     @Override
     public void run() {
-        byte[] serverResponse = new byte[MAXSTRING];
         try{
             DatagramSocket socket = new DatagramSocket(_port);
             DatagramPacket packet = new DatagramPacket(serverResponse, serverResponse.length);
-            System.out.println("before receiving packet");
             socket.receive(packet);  // block here
-            System.out.println("After receiving packet");
             article = new String(packet.getData(), 0, packet.getLength());
-        } catch (Exception e){
+        } catch (IOException e){
             System.out.println("[CLIENT]: Socket error occured. Please restart Client. Exiting...");
             article = "";
         }
