@@ -81,7 +81,12 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
 
         for (int i = 0; i < parts.length; i++){
             String part = parts[i];
-            if (Integer.parseInt(part) < 0 || Integer.parseInt(part) > 255) return false;
+            try {
+                if (Integer.parseInt(part) < 0
+                    || Integer.parseInt(part) > 255) return false;
+            } catch (NumberFormatException e) {
+                return false;
+            } 
         }
         return true;
     }
@@ -328,6 +333,18 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         try{
             Registry registry = LocateRegistry.getRegistry("localhost");
             PubSubServerInterface server = (PubSubServerInterface) registry.lookup("server.PubSubServer");
+            System.out.println("[SERVER]: Client pinged server. Server is online.");
+            return true;
+        } catch (Exception e){
+            return false;
+        }
+    }
+
+    // overloaded Ping(), where the FULL server name must be passed in
+    public boolean Ping(String Host, String ServerName) throws RemoteException {
+        try{
+            Registry registry = LocateRegistry.getRegistry(Host);
+            PubSubServerInterface server = (PubSubServerInterface) registry.lookup(ServerName);
             System.out.println("[SERVER]: Client pinged server. Server is online.");
             return true;
         } catch (Exception e){

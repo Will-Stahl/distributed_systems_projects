@@ -12,7 +12,11 @@ public class RunTestClasses {
            System.out.println(failure.toString());
         }
 
-        System.out.println(result.wasSuccessful());
+        if (result.wasSuccessful()) {
+            System.out.println("Tests for private methods successful.");
+        } else {
+            System.out.println("Tests for private methods failed.");
+        }
 
         // run test for public methods
         result = JUnitCore.runClasses(PublicPubSubMethodsTest.class);
@@ -21,6 +25,10 @@ public class RunTestClasses {
            System.out.println(failure.toString());
         }
 
-        System.out.println(result.wasSuccessful());
+        if (result.wasSuccessful()) {
+            System.out.println("Tests for public methods successful.");
+        } else {
+            System.out.println("Tests for public methods failed.");
+        }
     }
 } 

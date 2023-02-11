@@ -14,4 +14,6 @@ public interface PubSubServerInterface extends Remote
     public boolean Publish(String Article, String IP, int Port) throws RemoteException;
     
     public boolean Ping() throws RemoteException;
+
+    public boolean Ping(String Host, String ServerName) throws RemoteException;
 }
