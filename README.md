@@ -2,7 +2,11 @@
 ### Authors: Jashwin Acharya (achar061), Al Yaqdhan Al Maawali (almaa009), William Stahl (stahl186)
 
 ## Run Tests
-You will need 3 separate terminals. In one, run
+You will need 3 separate terminals. In one navigate to src from the project root
+````
+cd src
+````
+and then run
 ````
 rmiregistry &
 ````
