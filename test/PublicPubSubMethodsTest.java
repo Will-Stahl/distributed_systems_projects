@@ -143,9 +143,16 @@ public class PublicPubSubMethodsTest {
         Assert.assertTrue(Svr.Ping("localhost", "server.TestH"));
     }
 
-    // public static void main(String[] args) throws RemoteException, IOException
-    // {
-    //     PubSubServer svr = new PubSubServer();
-    //     System.out.println("PubSubServer class accessed.");
-    // }
+    @Test
+    public void CheckReception() throws RemoteException, NotBoundException {
+        /**
+         * TODO: "client" listening thread should terminate when it receives
+         * any response from server. It will return and inform main thread
+         * whether it was according to their subscription.
+         * This means another client should publish content which does not match
+         * AND content that does match.
+         */
+        
+    }
+
 }
