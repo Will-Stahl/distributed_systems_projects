@@ -27,4 +27,8 @@ and run the tests with
 javac -cp ./../lib/junit-4.13.2.jar:. RunTestClasses.java
 java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTestClasses
 ````
-In order to re-run the tests, you must first kill the terminal from which `start-servers.sh` was run. Then, open a new terminal and run `./start-servers.sh` from `src` again. The tests assume they run on fresh servers.
+In order to re-run the tests, you must first kill the process started by start-servers. Use
+````
+pkill -15 java
+````
+This will also kill any other running java processes you have started.
