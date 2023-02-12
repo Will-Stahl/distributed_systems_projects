@@ -19,6 +19,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     private final int MAX_CLIENTS = 5;
     private static int clientCount = 0;
     private static Set<Integer> portsCurrentlyInUse = new HashSet<>();
+    private static String binding;
 
     public PubSubServer() throws RemoteException, IOException
     {
@@ -344,7 +345,8 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     {
         try{
             Registry registry = LocateRegistry.getRegistry("localhost");
-            PubSubServerInterface server = (PubSubServerInterface) registry.lookup("server.PubSubServer");
+            PubSubServerInterface server = (PubSubServerInterface)
+                registry.lookup("server." + binding);
             System.out.println("[SERVER]: Client pinged server. Server is online.");
             return true;
         } catch (Exception e){
@@ -397,7 +399,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
 
     public static void main(String[] args) throws RemoteException, MalformedURLException
     {
-        String binding = "PubSubServer";
+        binding = "PubSubServer";
         if (args.length > 0) {
             binding = args[0];
         }

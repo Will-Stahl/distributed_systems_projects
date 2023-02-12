@@ -18,6 +18,7 @@ class ClientTestThread extends Thread {
     // run() based off ProcessClientResponseFromServer() from PubSubClient.java
     @Override
     public void run() {
+        byte[] serverResponse = new byte[MAXSTRING];
         try{
             DatagramSocket socket = new DatagramSocket(_port);
             DatagramPacket packet = new DatagramPacket(serverResponse, serverResponse.length);

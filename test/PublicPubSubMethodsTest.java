@@ -140,7 +140,6 @@ public class PublicPubSubMethodsTest extends Thread {
         Assert.assertTrue(Svr.Ping());
         // assume server on same machine
         // Assert.assertFalse(Svr.Ping("localhost", "not.existing"));
-        // System.out.println("Before Pinging existeing in CheckPing() test...");
         // Assert.assertTrue(Svr.Ping("localhost", "server.TestH"));
     }
 
@@ -156,7 +155,7 @@ public class PublicPubSubMethodsTest extends Thread {
         throws RemoteException, NotBoundException, InterruptedException {
         
         ClientTestThread client = new ClientTestThread(8000);  // port 8000
-        client.run();
+        client.start();
         Registry registry = LocateRegistry.getRegistry("127.0.0.1");
         PubSubServerInterface Svr = (PubSubServerInterface) registry.lookup("server.TestI");
         Svr.Join("127.0.0.1", 8000);  // SERVER Join
@@ -170,6 +169,27 @@ public class PublicPubSubMethodsTest extends Thread {
         Svr.Publish("Sports;Bingus;Pouch;client should receive this.", "127.0.0.1", 8001);
         client.join();  // THREAD join
         Assert.assertEquals(client.getArticle(), "Sports;Bingus;Pouch;client should receive this.");
+
+        // Test some subcombinations
+        // Svr.Subscribe("127.0.0.1", 8000, "Politics;;;");
+
+        // client = new ClientTestThread(8000);
+        // client.start();
+        // Svr.Publish("Politics;Tupac;Burrito;client should receive this.", "127.0.0.1", 8001);
+        // client.join();
+        // Assert.assertEquals(client.getArticle(), "Politics;Tupac;Burrito;client should receive this.");
+
+        // client = new ClientTestThread(8000);
+        // client.start();
+        // Svr.Publish("Politics;;Burrito;client should receive this.", "127.0.0.1", 8001);
+        // client.join();
+        // Assert.assertEquals(client.getArticle(), "Politics;;Burrito;client should receive this.");
+
+        // client = new ClientTestThread(8000);
+        // client.start();
+        // Svr.Publish("Politics;;;client should receive this.", "127.0.0.1", 8001);
+        // client.join();
+        // Assert.assertEquals(client.getArticle(), "Politics;;;client should receive this.");
     }
 
 }
