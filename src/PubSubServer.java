@@ -289,6 +289,12 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     }
 
     private static boolean ArticleValidForSubscribeOrUnSub(String article){
+        // Return false if article length is greater than 60 or 120 bytes (1 char is 2 bytes in Java)
+        if (article.length() > 60){
+            System.out.println("[SERVER]: Article is too long. Article length cannot be more than 60 characters");
+            return false;
+        }
+        
         // A correct article format has 3 semicolons, so that check should be done first
         if (article.chars().filter(ch -> ch == ';').count() != 3){
             return false;
