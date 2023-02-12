@@ -30,11 +30,11 @@ public class PubSubClient {
         System.out.println("3. Enter \"Publish\" to send a new article.");
         System.out.println("4. Enter \"Subscribe\" to request a subscription to the group server.");
         System.out.println("5. Enter \"Unsubscribe\" to request an unsubscribe to the group server.");
-        System.out.println("6: Enter \"Display\" to display subscribed articles.");
+        System.out.println("6: Enter \"Display\" to display published articles.");
     }
 
     private static void DisplaySubscribedArticles(){
-        System.out.println("\n[CLIENT]: Client is subscribed to the following article(s): \n");
+        System.out.println("\n[CLIENT]: The following articles have been published to this Client: \n");
         Iterator<String> it = subscribedArticles.iterator();
         int count = 1;
         while (it.hasNext()) {
@@ -150,7 +150,7 @@ public class PubSubClient {
             
             InetAddress address = InetAddress.getByName(hostName);
             PrintWelcomeMessage();
-            
+
             // Thread for receiving subscribed articles back from the server
             new Thread(new Runnable(){
                 @Override
@@ -160,7 +160,7 @@ public class PubSubClient {
                     }
                 }
             }).start();
-
+            
             // Thread for sending client requests to server
             new Thread(new Runnable(){
                 @Override
@@ -170,7 +170,6 @@ public class PubSubClient {
                     }
                 }
             }).start();
-
         } catch (Exception e){
             System.err.println("[CLIENT]: Client Exception Occurred. Please restart client! Exiting now...");
         }
