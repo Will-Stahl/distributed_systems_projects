@@ -115,8 +115,8 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
             System.out.printf("[SERVER]: Client at IP Address %s is and Port %d is not currently part of the server.\n", IP, Port);
             return false;
         }
+
         // Remove client from all subMap'ings as well
-        // TODO: test that clients are removed from subMap
         final SubscriberInfo fnlSubPtr = subPtr;
         subMap.forEach((k, v) -> {
                 if (v.contains(fnlSubPtr)) {
@@ -204,7 +204,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
                 return true;
             }
         }
-        System.out.printf("[SERVER]: Client with IP Address %s and Port Number %d is not currently subscribed to Article \"%s\".", IP, Port, Article);
+        System.out.printf("[SERVER]: Client with IP Address %s and Port Number %d is not currently subscribed to Article \"%s\".\n", IP, Port, Article);
         return false;
     }
     
@@ -234,6 +234,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
             System.out.println("[SERVER]: Article format not valid for publishing.");
             return false;
         }
+
         // list containing subscription fields combination from Article
         // as well as all subcombinations of those fields
         ArrayList<String> comboList = genLessSpecificSubs(Article);
@@ -243,7 +244,6 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         for (String combo : comboList) {
             ArrayList<SubscriberInfo> subscribers = subMap.get(combo);
             if (subscribers == null) {
-                System.out.println("[SERVER]: This article does not currently have any subscriptions.");
                 continue;  // none have ever subscribed to this combination
             }
             byte[] message = Article.getBytes();
@@ -269,20 +269,31 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         return true;
     }
 
-    private static boolean ArticleValidForPublish(String article){
+    private static boolean IsGeneralArticleFormatValid(String article){
         // Return false if article length is greater than 60 or 120 bytes (1 char is 2 bytes in Java)
         if (article.length() > 60){
-            System.out.println("[SERVER]: Article is too long. Article length cannot be more than 60 characters");
+            System.out.println("[SERVER]: Article is too long. Article length cannot be more than 60 characters.");
             return false;
         }
 
         // A correct article format has 3 semicolons, so that check should be done first
         if (article.chars().filter(ch -> ch == ';').count() != 3){
+            System.out.println("[SERVER]: Article does not have 3 semicolons separating all 4 fields. Please re-enter the Article string.");
             return false;
         }
+
+        return true;
+    }
+
+    private static boolean ArticleValidForPublish(String article){
+
+        // If article length is longer than 60 characters or does not have 3 colons separating each field, then return false.
+        if (!IsGeneralArticleFormatValid(article)) return false;
+
         // Return false if article format is like ";;;contents" or "contents" field is missing
         HashMap<String, String> articleMap = parseArticle(article);
         if (FirstThreeFieldsEmpty(articleMap) || articleMap.get("contents") == "") {
+            System.out.println("[SERVER]: Either all first three fields are empty or the last field, \"contents\", is missing. ");
             return false;
         }
 
@@ -290,16 +301,9 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     }
 
     private static boolean ArticleValidForSubscribeOrUnSub(String article){
-        // Return false if article length is greater than 60 or 120 bytes (1 char is 2 bytes in Java)
-        if (article.length() > 60){
-            System.out.println("[SERVER]: Article is too long. Article length cannot be more than 60 characters");
-            return false;
-        }
+        // If article length is longer than 60 characters or does not have 3 colons separating each field, then return false.
+        if (!IsGeneralArticleFormatValid(article)) return false;
 
-        // A correct article format has 3 semicolons, so that check should be done first
-        if (article.chars().filter(ch -> ch == ';').count() != 3){
-            return false;
-        }
         Set<String> types = new HashSet<>(Arrays.asList("Sports", "Lifestyle", "Entertainment", "Business", "Technology",
                                                         "Science", "Politics" ,"Health"));
     
@@ -307,14 +311,23 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         HashMap<String, String> articleMap = parseArticle(article);
 
         // If first three fields are all empty, return False
-        if (FirstThreeFieldsEmpty(articleMap)) return false;
+        if (FirstThreeFieldsEmpty(articleMap)) {
+            System.out.println("[SERVER]: All first three fields cannot be empty for subscribe. At least one should be filled.");
+            return false;
+        }
         
         // At this point we know at least 1 of the first 3 fields is not empty
-        // If the article type is present then check if it is a valid article type
-        if (articleMap.get("type") != "" && !(types.contains(articleMap.get("type")))) return false;
+        // If the article type is present, then check if it is a valid article type
+        if (articleMap.get("type") != "" && !(types.contains(articleMap.get("type")))) {
+            System.out.println("[SERVER]: Article type being requested to for subscription is not valid.");
+            return false;
+        }
 
         // Finally check if the "contents" field is empty
-        if (articleMap.get("contents") != "") return false;
+        if (articleMap.get("contents") != "") {
+            System.out.println("[SERVER]: Contents field has to be empty when subscribing to an article.");
+            return false;
+        };
 
         return true;
     }

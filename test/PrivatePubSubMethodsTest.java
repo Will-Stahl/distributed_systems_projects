@@ -16,25 +16,36 @@ public class PrivatePubSubMethodsTest {
         return true;
     }
 
-    private static boolean ArticleValidForPublish(String article){
+    private static boolean IsGeneralArticleFormatValid(String article){
+        // Return false if article length is greater than 60 or 120 bytes (1 char is 2 bytes in Java)
+        if (article.length() > 60){
+            return false;
+        }
+
         // A correct article format has 3 semicolons, so that check should be done first
         if (article.chars().filter(ch -> ch == ';').count() != 3){
             return false;
         }
+        return true;
+    }
+
+    private static boolean ArticleValidForPublish(String article){
+
+        // If article length is longer than 60 characters or does not have 3 colons separating each field, then return false.
+        if (!IsGeneralArticleFormatValid(article)) return false;
+
         // Return false if article format is like ";;;contents" or "contents" field is missing
         HashMap<String, String> articleMap = parseArticle(article);
         if (FirstThreeFieldsEmpty(articleMap) || articleMap.get("contents") == "") {
             return false;
         }
-
         return true;
     }
 
     private static boolean ArticleValidForSubscribeOrUnSub(String article){
-        // A correct article format has 3 semicolons, so that check should be done first
-        if (article.chars().filter(ch -> ch == ';').count() != 3){
-            return false;
-        }
+        // If article length is longer than 60 characters or does not have 3 colons separating each field, then return false.
+        if (!IsGeneralArticleFormatValid(article)) return false;
+
         Set<String> types = new HashSet<>(Arrays.asList("Sports", "Lifestyle", "Entertainment", "Business", "Technology",
                                                         "Science", "Politics" ,"Health"));
     
@@ -42,15 +53,20 @@ public class PrivatePubSubMethodsTest {
         HashMap<String, String> articleMap = parseArticle(article);
 
         // If first three fields are all empty, return False
-        if (FirstThreeFieldsEmpty(articleMap)) return false;
+        if (FirstThreeFieldsEmpty(articleMap)) {
+            return false;
+        }
         
         // At this point we know at least 1 of the first 3 fields is not empty
-        // If the article type is present then check if it is a valid article type
-        if (articleMap.get("type") != "" && !(types.contains(articleMap.get("type")))) return false;
+        // If the article type is present, then check if it is a valid article type
+        if (articleMap.get("type") != "" && !(types.contains(articleMap.get("type")))) {
+            return false;
+        }
 
         // Finally check if the "contents" field is empty
-        if (articleMap.get("contents") != "") return false;
-
+        if (articleMap.get("contents") != "") {
+            return false;
+        };
         return true;
     }
 

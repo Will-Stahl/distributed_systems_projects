@@ -31,10 +31,11 @@ public class PubSubClient {
         System.out.println("4. Enter \"Subscribe\" to request a subscription to the group server.");
         System.out.println("5. Enter \"Unsubscribe\" to request an unsubscribe to the group server.");
         System.out.println("6: Enter \"Display\" to display published articles.");
+        System.out.println("7: Enter \"Exit\" to terminate the client program.");
     }
 
     private static void DisplaySubscribedArticles(){
-        System.out.println("\n[CLIENT]: The following articles have been published to this Client: \n");
+        System.out.println("[CLIENT]: The following articles have been published to this Client:");
         Iterator<String> it = subscribedArticles.iterator();
         int count = 1;
         while (it.hasNext()) {
@@ -136,7 +137,7 @@ public class PubSubClient {
     public static void main(String[] args) throws IOException{
         try{
             if (args.length < 1) {
-                System.out.print("[CLIENT]: Please provide a hostname as an argument.\n");
+                System.out.println("[CLIENT]: Please provide a hostname as an argument.");
                 return;
             }
             SetRandomPortNumber();
