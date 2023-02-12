@@ -40,7 +40,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     {
         // In the off chance that the random port generated is currently in use, we should prompt the user to try joining again.
         if (portsCurrentlyInUse.contains(Port)){
-            System.out.println("This port is currently in use. Please try joining again to attempt connecting to a different port.");
+            System.out.println("[SERVER]: This port is currently in use. Please try joining again to attempt connecting to a different port.");
             return false;
         }
 
@@ -67,7 +67,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         // check for valid IP address
         if (IsValidIPAddress(IP)){
             Subscribers.add(new SubscriberInfo(IP, Port));
-            System.out.printf("\n[SERVER]: Added new client with IP: %s, Port: %d\n", IP, Port);
+            System.out.printf("[SERVER]: Added new client with IP: %s, Port: %d\n", IP, Port);
             clientCount += 1;
             return true;
         }
@@ -199,12 +199,12 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         for(int i = 0; i < leavingFrom.size(); i++){
             SubscriberInfo sub = leavingFrom.get(i);
             if (sub.GetIP().equals(IP) && sub.GetPort() == Port){
-                System.out.printf("[SERVER]: Client with IP Address %s has unsubscribed from Article \"%s\".\n",IP, Article);
+                System.out.printf("[SERVER]: Client with IP Address %s and Port Number %d has unsubscribed from Article \"%s\".\n",IP, Port, Article);
                 leavingFrom.remove(i);
                 return true;
             }
         }
-        System.out.printf("[SERVER]: Client with IP Address %s is not currently subscribed to Article \"%s\".", IP, Article);
+        System.out.printf("[SERVER]: Client with IP Address %s and Port Number %d is not currently subscribed to Article \"%s\".", IP, Port, Article);
         return false;
     }
     
@@ -243,6 +243,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         for (String combo : comboList) {
             ArrayList<SubscriberInfo> subscribers = subMap.get(combo);
             if (subscribers == null) {
+                System.out.println("[SERVER]: This article does not currently have any subscriptions.");
                 continue;  // none have ever subscribed to this combination
             }
             byte[] message = Article.getBytes();
@@ -269,6 +270,12 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     }
 
     private static boolean ArticleValidForPublish(String article){
+        // Return false if article length is greater than 60 or 120 bytes (1 char is 2 bytes in Java)
+        if (article.length() > 60){
+            System.out.println("[SERVER]: Article is too long. Article length cannot be more than 60 characters");
+            return false;
+        }
+
         // A correct article format has 3 semicolons, so that check should be done first
         if (article.chars().filter(ch -> ch == ';').count() != 3){
             return false;
@@ -283,6 +290,12 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     }
 
     private static boolean ArticleValidForSubscribeOrUnSub(String article){
+        // Return false if article length is greater than 60 or 120 bytes (1 char is 2 bytes in Java)
+        if (article.length() > 60){
+            System.out.println("[SERVER]: Article is too long. Article length cannot be more than 60 characters");
+            return false;
+        }
+
         // A correct article format has 3 semicolons, so that check should be done first
         if (article.chars().filter(ch -> ch == ';').count() != 3){
             return false;
