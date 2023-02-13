@@ -1,6 +1,5 @@
+import java.rmi.Naming;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.net.InetAddress;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -34,7 +33,6 @@ public class PubSubClient {
         System.out.println("4. Enter \"Subscribe\" to request a subscription to the group server.");
         System.out.println("5. Enter \"Unsubscribe\" to request an unsubscribe to the group server.");
         System.out.println("6: Enter \"Display\" to display published articles.");
-        System.out.println("7: Enter \"Exit\" to terminate the client program.");
     }
 
     // Function for displaying articles that have been published to the client
@@ -153,8 +151,7 @@ public class PubSubClient {
             }
             SetRandomPortNumber();
             String hostName = args[0];
-            Registry registry = LocateRegistry.getRegistry(hostName);
-            PubSubServerInterface server = (PubSubServerInterface) registry.lookup("server.PubSubServer");
+            PubSubServerInterface server = (PubSubServerInterface) Naming.lookup("rmi://"+hostName+"/server.PubSubServer");
 
             // Periodically ping server to check if it is live.
             Timer timer = new Timer();

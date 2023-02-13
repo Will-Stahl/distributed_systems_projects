@@ -257,7 +257,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
                     InetAddress address = InetAddress.getByName(sub.GetIP());
                     DatagramPacket packet = new DatagramPacket(message, message.length, address, sub.GetPort());
                     socket.send(packet);
-                    System.out.printf("[SERVER]: Sent article %s to client with IP Address: %s and Port Number: %d\n", Article, sub.GetIP(), sub.GetPort());
+                    System.out.printf("[SERVER]: Sent article \"%s\" to client with IP Address: %s and Port Number: %d\n", Article, sub.GetIP(), sub.GetPort());
                 } catch(Exception e){
                     String errMsg =
                         "[SERVER]: Error detected while publishing to client with IP Address: %s and Port Number: %d\n";
@@ -369,15 +369,15 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
     
     public boolean Ping() throws RemoteException
     {
-        try{
-            Registry registry = LocateRegistry.getRegistry("localhost");
-            PubSubServerInterface server = (PubSubServerInterface)
-                registry.lookup("server." + binding);
-            System.out.println("[SERVER]: Client pinged server. Server is online.");
-            return true;
-        } catch (Exception e){
-            return false;
-        }
+        boolean reachable = false;
+        try {
+            InetAddress address = InetAddress.getLocalHost();
+            reachable = address.isReachable(5000);
+            System.out.println("Client pinged server. Server is online.");
+          } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+          }
+        return reachable;
         // return true;
     }
 
