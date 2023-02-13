@@ -6,7 +6,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.io.IOException;
 
-// TODO: more tests, and bach script to start n servers
 // The plan: start n servers in a terminal with a bash script
 // then switch to different terminal and run these tests
 
@@ -138,9 +137,6 @@ public class PublicPubSubMethodsTest extends Thread {
         PubSubServerInterface Svr = (PubSubServerInterface) registry.lookup("server.TestH");
         // default Ping() looks for "server.PubSubServer" at "localhost"
         Assert.assertTrue(Svr.Ping());
-        // assume server on same machine
-        // Assert.assertFalse(Svr.Ping("localhost", "not.existing"));
-        // Assert.assertTrue(Svr.Ping("localhost", "server.TestH"));
     }
 
     /**
@@ -169,27 +165,5 @@ public class PublicPubSubMethodsTest extends Thread {
         Svr.Publish("Sports;Bingus;Pouch;client should receive this.", "127.0.0.1", 8001);
         client.join();  // THREAD join
         Assert.assertEquals(client.getArticle(), "Sports;Bingus;Pouch;client should receive this.");
-
-        // Test some subcombinations
-        // Svr.Subscribe("127.0.0.1", 8000, "Politics;;;");
-
-        // client = new ClientTestThread(8000);
-        // client.start();
-        // Svr.Publish("Politics;Tupac;Burrito;client should receive this.", "127.0.0.1", 8001);
-        // client.join();
-        // Assert.assertEquals(client.getArticle(), "Politics;Tupac;Burrito;client should receive this.");
-
-        // client = new ClientTestThread(8000);
-        // client.start();
-        // Svr.Publish("Politics;;Burrito;client should receive this.", "127.0.0.1", 8001);
-        // client.join();
-        // Assert.assertEquals(client.getArticle(), "Politics;;Burrito;client should receive this.");
-
-        // client = new ClientTestThread(8000);
-        // client.start();
-        // Svr.Publish("Politics;;;client should receive this.", "127.0.0.1", 8001);
-        // client.join();
-        // Assert.assertEquals(client.getArticle(), "Politics;;;client should receive this.");
     }
-
 }

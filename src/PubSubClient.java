@@ -13,17 +13,20 @@ public class PubSubClient {
     final private static int MAXSTRING = 120;
     private static Set<String> subscribedArticles = new HashSet<>();;
 
+    // Function for getting a random port number
     private static void SetRandomPortNumber(){
         Random rand = new Random();
         port = (rand.nextInt((65535 - 1024) + 1)) + 1024;
     }
 
+    // Function for printing a Welcome Message
     private static void PrintWelcomeMessage(){
         System.out.println("\nWelcome to the PubSub Client!");
         System.out.println("Before entering your request, please see the following rules for the 6 operations that can be performed (none of these are case sensitive): \n");
         DisplayOptions();
     }
 
+    // Function for displaying menu options
     private static void DisplayOptions(){
         System.out.println("1. Enter \"Join\" to join the group server.");
         System.out.println("2. Enter \"Leave\" to leave the group server.");
@@ -34,6 +37,7 @@ public class PubSubClient {
         System.out.println("7: Enter \"Exit\" to terminate the client program.");
     }
 
+    // Function for displaying articles that have been published to the client
     private static void DisplaySubscribedArticles(){
         System.out.println("[CLIENT]: The following articles have been published to this Client:");
         Iterator<String> it = subscribedArticles.iterator();
@@ -44,6 +48,7 @@ public class PubSubClient {
         }
     }
 
+    // Function for taking user input from the terminal for performing join, leave, publish, subscribe, unsubscribe and display operations
     private static String GetAndValidateClientRequest(){
         Scanner sc = new Scanner(System.in);
         String clientRequest = "";
@@ -52,6 +57,7 @@ public class PubSubClient {
             clientRequest = sc.nextLine();
             String lowerCaseRequest = clientRequest.trim().toLowerCase();
 
+            // Display all articles that have been published to the client if they exist.
             if (lowerCaseRequest.startsWith("display")) {
                 if (subscribedArticles.size() == 0){
                     System.out.println("[CLIENT]: Client is not currently subscribed to any articles.");
@@ -62,7 +68,7 @@ public class PubSubClient {
                 break;
             }
 
-            // If we have a join, leave or ping message, then we can simply break from the loop
+            // If we have a join or leave essage, then we can simply break from the loop
             if (lowerCaseRequest.startsWith("join") ||  lowerCaseRequest.startsWith("leave")){
                 break;
             }
@@ -84,6 +90,9 @@ public class PubSubClient {
         return clientRequest.trim();
     }
 
+    // Function for validating if the publish, subscribe and unsubscribe functions have a colon
+    // and two parts to them, for example: "publish: Sports;;;contents" is valid, whereas 
+    // "publish Sports;;;contents is invalid".
     private static boolean ValidPublishSubOrUnSubCommandFormat(String clientRequest){
         String [] words = clientRequest.split(":");
         return (words.length == 2) && (words[0].equals("publish") || 
@@ -91,6 +100,7 @@ public class PubSubClient {
                                         words[0].equals("unsubscribe"));
     }
 
+    // Function for making RMI calls to the group server depending on the client's request.
     private static void SendClientRequestToServer(PubSubServerInterface server, InetAddress address){
         String IP = address.getHostAddress();
         String clientRequest = GetAndValidateClientRequest();
@@ -117,6 +127,7 @@ public class PubSubClient {
         
     }
 
+    // Function for receiving published messages from the server via UDP.
     private static void ProcessClientResponseFromServer(InetAddress address){
         byte[] serverResponse = new byte[MAXSTRING];
         try{
@@ -177,6 +188,7 @@ public class PubSubClient {
     }
 }
 
+// Class for pinging the RMI group server every 10 seconds.
 class PingServer extends TimerTask{
     private PubSubServerInterface server;
 

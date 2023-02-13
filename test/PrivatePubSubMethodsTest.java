@@ -241,5 +241,14 @@ public class PrivatePubSubMethodsTest {
 
         command = "unsub: Science;;UMN;";
         Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "unsubscribe Science;;UMN;";
+        Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "subscribe Science;;UMN;";
+        Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
+
+        command = "publish Sports;;;contents";
+        Assert.assertFalse(ValidPublishSubOrUnSubCommandFormat(command));
     }
 }
