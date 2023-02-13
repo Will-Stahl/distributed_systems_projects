@@ -135,7 +135,7 @@ public class PublicPubSubMethodsTest extends Thread {
     public void CheckPing() throws RemoteException, NotBoundException {
         Registry registry = LocateRegistry.getRegistry("127.0.0.1");
         PubSubServerInterface Svr = (PubSubServerInterface) registry.lookup("server.TestH");
-        // default Ping() looks for "server.PubSubServer" at "localhost"
+        // default Ping() looks for "server.<ObjectBinding>" at "localhost"
         Assert.assertTrue(Svr.Ping());
     }
 
