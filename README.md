@@ -10,6 +10,7 @@ and then run
 ````
 rmiregistry &
 ````
+This must be in the src so that the servers can find this service.
 In another, navigate to src from the project root
 ````
 cd src
@@ -18,17 +19,23 @@ and use the script that compiles and starts several differently named servers.
 ````
 ./start-servers.sh
 ````
-In the 3rd terminal, navigate to the tests directory from the root
+In the 3rd terminal, navigate to the tests directory from the root:
 ````
 cd tests
 ````
-and run the tests with
+Compile the tests with:
 ````
+javac ClientTestThread.java
 javac -cp ./../lib/junit-4.13.2.jar:. RunTestClasses.java
+````
+Run the tests with:
+````
 java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTestClasses
 ````
-In order to re-run the tests, you must first kill the process started by start-servers. Use
+This assumes that the test servers have been freshly booted. Some tests will fail if they are run without restarting the test objects.
+In order to re-run the tests, you must first kill the processes started by start-servers. Use
 ````
+Ctrl+C
 pkill -15 java
 ````
-This will also kill any other running java processes you have started.
+WARNING: this will also kill any other running java processes you have started.
