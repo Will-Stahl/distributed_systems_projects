@@ -18,14 +18,18 @@ public class PubSubClient {
         port = (rand.nextInt((65535 - 1024) + 1)) + 1024;
     }
 
-    // Function for printing a Welcome Message
+    /**
+     * Function for printing a Welcome Message
+     **/
     private static void PrintWelcomeMessage(){
         System.out.println("\nWelcome to the PubSub Client!");
         System.out.println("Before entering your request, please see the following rules for the 6 operations that can be performed (none of these are case sensitive): \n");
         DisplayOptions();
     }
 
-    // Function for displaying menu options
+    /**
+     * Function for displaying menu options
+     **/
     private static void DisplayOptions(){
         System.out.println("1. Enter \"Join\" to join the group server.");
         System.out.println("2. Enter \"Leave\" to leave the group server.");
@@ -35,7 +39,9 @@ public class PubSubClient {
         System.out.println("6: Enter \"Display\" to display published articles.");
     }
 
-    // Function for displaying articles that have been published to the client
+    /** 
+     * Function for displaying articles that have been published to the client
+    */
     private static void DisplaySubscribedArticles(){
         System.out.println("[CLIENT]: The following articles have been published to this Client:");
         Iterator<String> it = subscribedArticles.iterator();
@@ -46,7 +52,10 @@ public class PubSubClient {
         }
     }
 
-    // Function for taking user input from the terminal for performing join, leave, publish, subscribe, unsubscribe and display operations
+    /**
+     * Function for taking user input from the terminal for performing join, leave, 
+     * publish, subscribe, unsubscribe and display operations
+     */
     private static String GetAndValidateClientRequest(){
         Scanner sc = new Scanner(System.in);
         String clientRequest = "";
@@ -88,9 +97,13 @@ public class PubSubClient {
         return clientRequest.trim();
     }
 
-    // Function for validating if the publish, subscribe and unsubscribe functions have a colon
-    // and two parts to them, for example: "publish: Sports;;;contents" is valid, whereas 
-    // "publish Sports;;;contents is invalid".
+    /**
+     * Function for validating if the publish, subscribe and unsubscribe functions have a colon
+     * and two parts to them, for example: "publish: Sports;;;contents" is valid, whereas 
+     * "publish Sports;;;contents is invalid".
+     * @param clientRequest: The client request that is input from the terminal
+     * @return
+     */
     private static boolean ValidPublishSubOrUnSubCommandFormat(String clientRequest){
         String [] words = clientRequest.split(":");
         return (words.length == 2) && (words[0].equals("publish") || 
@@ -98,7 +111,11 @@ public class PubSubClient {
                                         words[0].equals("unsubscribe"));
     }
 
-    // Function for making RMI calls to the group server depending on the client's request.
+    /**
+     * Function for making RMI calls to the group server depending on the client's request.
+     * @param server - Server object for making RMI calls
+     * @param address - Client address
+     */
     private static void SendClientRequestToServer(PubSubServerInterface server, InetAddress address){
         String IP = address.getHostAddress();
         String clientRequest = GetAndValidateClientRequest();
@@ -125,7 +142,10 @@ public class PubSubClient {
         
     }
 
-    // Function for receiving published messages from the server via UDP.
+    /**
+     * Function for receiving published messages from the server via UDP.
+     * @param address - Client address
+     */
     private static void ProcessClientResponseFromServer(InetAddress address){
         byte[] serverResponse = new byte[MAXSTRING];
         try{

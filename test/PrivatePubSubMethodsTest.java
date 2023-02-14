@@ -187,7 +187,7 @@ public class PrivatePubSubMethodsTest {
 
     // Check if valid article formats return True for "Subscribe"
     @Test
-    public void CheckValidArticleForSubscribe(){
+    public void CheckValidArticleForSubAndUnSub(){
         String articleName = "Sports;;;";
         Assert.assertTrue(ArticleValidForSubscribeOrUnSub(articleName));
 
@@ -203,7 +203,7 @@ public class PrivatePubSubMethodsTest {
 
     // Check if invalid article formats return False for "Subscribe"
     @Test
-    public void CheckInValidArticleForSubscribe(){
+    public void CheckInValidArticleForSubAndUnSub(){
         String articleName = ";;;contents";
         Assert.assertFalse(ArticleValidForSubscribeOrUnSub(articleName));
 

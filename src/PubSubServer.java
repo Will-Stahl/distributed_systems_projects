@@ -269,6 +269,12 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         return true;
     }
 
+    /**
+     * Function for validating the general format of an article string such as
+     * the length of the article string (not more than 60 characters) and if it
+     * has 4 subfields separated by 3 semicolons
+     * @param article: The article string passed from the client to the server
+     **/
     private static boolean IsGeneralArticleFormatValid(String article){
         // Return false if article length is greater than 60 or 120 bytes (1 char is 2 bytes in Java)
         if (article.length() > 60){
@@ -285,6 +291,13 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         return true;
     }
 
+    /**
+     * This function tests if the article format is valid for publishing.
+     * Article format is valid for publishing when it is not more than 60
+     * characters long; has 4 subfields; when at least one of the first 3 subfields
+     * are populated; and when the "contents" field is not empty.
+     * @param article: Article string passed from client to server
+     */
     private static boolean ArticleValidForPublish(String article){
 
         // If article length is longer than 60 characters or does not have 3 colons separating each field, then return false.
@@ -300,6 +313,14 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         return true;
     }
 
+    /**
+     * This function tests if the article format is valid for subscribing to 
+     * or unsubscribing from. Article format is valid for sub and unsub when it is 
+     * not more than 60 characters long; has 4 subfields; when at least one 
+     * of the first 3 subfields are populated; the "type" (first field) matches one of the 
+     * valid types defined in the function; and when the "contents" field is empty.
+     * @param article: Article string passed from client to server
+     */
     private static boolean ArticleValidForSubscribeOrUnSub(String article){
         // If article length is longer than 60 characters or does not have 3 colons separating each field, then return false.
         if (!IsGeneralArticleFormatValid(article)) return false;
@@ -332,12 +353,24 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         return true;
     }
 
+    /**
+     * Function for checking if first three fields (type, originator and org) of the 
+     * article string are all empty
+     * @param articleMap: Map that has the format {type: "", originator: "", org: "", contents:""}
+     * @return
+     */
     private static boolean FirstThreeFieldsEmpty(HashMap<String, String> articleMap){
         return (articleMap.get("type") == "") && 
                 (articleMap.get("originator") == "") && 
                 (articleMap.get("org") == "");
     }
 
+    /**
+     * Function for parsing a valid article and producing a map that 
+     * has the format: {type: "", originator: "", org: "", contents:""}
+     * @param article: Article string passed from client to server
+     * @return
+     */
     private static HashMap<String, String> parseArticle(String article){
         // Remove any leading or trailing white spaces
         article = article.trim();
@@ -367,6 +400,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         return articleMap;
     }
     
+    // Function for pinging the server to check if its online
     public boolean Ping() throws RemoteException
     {
         boolean reachable = false;
@@ -393,15 +427,21 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         }
     }
 
-    // helper returns subscription details string with no 3rd semicolon and no contents field 
+    /**
+     * helper returns subscription details string with no 3rd semicolon and no contents field 
+     * @param subFields - Article map that has the format: {type: "", originator: "", org: "", contents:""}
+     */
     private static String unparseSubscription(HashMap<String, String> subFields) {
         return subFields.get("type") + ";"
         + subFields.get("originator") + ";"
         + subFields.get("org");
     }
 
-    // helper function that generates all subscription strings in the format
-    // topic;originator;org that are equally or less specific than the argument
+    /**
+     * helper function that generates all subscription strings in the format
+     * topic;originator;org that are equally or less specific than the argument
+     * @param sub - article string passed from client to server
+     */
     private static ArrayList<String> genLessSpecificSubs(String sub) {
         HashMap<String, String> fields = parseArticle(sub);
         ArrayList<String> comboList = new ArrayList<>();
