@@ -407,12 +407,11 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
         try {
             InetAddress address = InetAddress.getLocalHost();
             reachable = address.isReachable(5000);
-            System.out.println("Client pinged server. Server is online.");
+            System.out.println("[SERVER]: Client pinged server. Server is online.");
           } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println("[SERVER]: Error: " + e.getMessage());
           }
         return reachable;
-        // return true;
     }
 
     // overloaded Ping(), where the FULL server name must be passed in
@@ -474,7 +473,7 @@ public class PubSubServer extends UnicastRemoteObject implements PubSubServerInt
             Naming.rebind("server." + binding, ContentSrv);
             System.out.println("\nPublish-Subscribe Server is ready as: " + binding);
         } catch(Exception e) {
-            System.out.println("Error occurred while trying to start server. Exiting...");
+            System.out.println("[SERVER]: Error occurred while trying to start server. Exiting...");
             System.exit(1);
         }
     }
