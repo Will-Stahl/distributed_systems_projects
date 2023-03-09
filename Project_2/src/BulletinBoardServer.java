@@ -79,10 +79,10 @@ public class BulletinBoardServer extends UnicastRemoteObject implements Bulletin
             System.exit(0);
         }
 
-        int port = Integer.parseInt(args[1]);
+        int port = Integer.parseInt(args[0]);
 
         // If port is invalid, then print error message and exit.
-        if (!CheckValidPort(Integer.parseInt(args[1]))){
+        if (!CheckValidPort(port)){
             System.out.println("\n[SERVER]: Port number specified is invalid. Valid port numbers are 2000, 2001, 2002, 2003 and 2004");
             System.out.println("[SERVER]: Exiting...");
             System.exit(0);
