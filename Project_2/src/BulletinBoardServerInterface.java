@@ -1,6 +1,5 @@
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.*;
 
 public interface BulletinBoardServerInterface extends Remote
 {

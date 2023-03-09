@@ -73,8 +73,8 @@ public class BulletinBoardServer extends UnicastRemoteObject implements Bulletin
 
     public static void main(String[] args){
         // If no argument is specified, then print error message and exit
-        if (args.length != 2){
-            System.out.println("\n[SERVER]: Usage: java BulletinBoardServer <hostname> <port>");
+        if (args.length != 1){
+            System.out.println("\n[SERVER]: Usage: java BulletinBoardServer <port>");
             System.out.println("[SERVER]: Exiting...");
             System.exit(0);
         }
