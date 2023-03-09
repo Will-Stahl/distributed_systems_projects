@@ -1,3 +1,6 @@
+## Running servers and clients
+
+Navigate to src folder.
 
 Compile server using the command: 
 `javac BulletinBoardServer.java`
