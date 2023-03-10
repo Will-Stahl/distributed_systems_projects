@@ -10,14 +10,41 @@ import java.net.InetAddress;
 import java.io.IOException;
 import java.util.*;
 
-public class BulletinBoardServer extends UnicastRemoteObject implements BulletinBoardServerInterface{
+// TODO: implement second interface for P2P communication
+public class BulletinBoardServer extends UnicastRemoteObject
+implements BulletinBoardServerInterface, ServerToServerInterface {
     
     private Integer serverPort; 
-    private Integer serverNumber;
+    private Integer serverNum;
 
-    public BulletinBoardServer(Integer serverPort, Integer serverNumber) throws RemoteException{
+    // P2P data structures
+    private Integer coordNum;
+    private Integer coordPort;
+    private String coordHost;
+    private Integer nextID;
+    private ConsistencyStrategy cStrat;
+    // TODO: article tree data structure
+
+    public BulletinBoardServer(Integer serverPort, Integer serverNum,
+        String consistency) throws RemoteException{
         this.serverPort = serverPort;
-        this.serverNumber = serverNumber;
+        this.serverNum = serverNum;
+        nextID = 1;
+        
+        // TODO: intialize article tree, maybe find coordinator, initialize consitency strategy object
+        if (consistency.equals("sequential")) {
+            cStrat = new SequentialStrategy();
+        }
+        else if (consistency.equals("quorum")) {
+
+        }
+        else if (consistency.equals("readyourwrites")) {
+
+        }
+        else {
+            System.out.println("Invalid strategy entered, defaulting to sequential");
+            cStrat = new SequentialStrategy();
+        }
     }
 
     public Integer GetServerPort(){
@@ -25,7 +52,7 @@ public class BulletinBoardServer extends UnicastRemoteObject implements Bulletin
     }
 
     public Integer GetServerNumber(){
-        return serverNumber;
+        return serverNum;
     }
 
     public boolean Join(String IP, int Port) throws RemoteException
@@ -58,7 +85,42 @@ public class BulletinBoardServer extends UnicastRemoteObject implements Bulletin
     
     public boolean Leave(String IP, int Port) throws RemoteException{
         return false;
-    };
+    }
+
+    /**
+     * if primary server, use strategy (non-remote method)
+     * if not, use RMI to contact primary
+     * this RM should call a non-remote method as a strategy
+     * strategy consists of contacting other servers
+     */
+    public boolean Publish(String article) throws RemoteException {
+        if (coordNum == serverNum) {  // this server is the coordinator
+            return cStrat.ServerPublish(article, serverPort, nextID++);
+        }
+        // TODO: else look up coordinator in registry, request it to publish
+        Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
+        ServerToServerInterface coordServer = (ServerToServerInterface)
+            registry.lookup("BulletinBoardServer_" + coordNum);
+        return coordServer.CoordinatorPost(article);
+    }
+
+    /**
+     * from ServerToServerInterface
+     * this server should be the coordinator
+     * calls ServerPublish() using strategy object
+     */
+    public boolean CoordinatorPost(String article) throws RemoteException {
+        return cStrat.ServerPublish(article, serverPort, nextID++);
+    }
+
+    /**
+     * from ServerToServerinterface
+     * specify article to reply to 
+     * if 0, it replies to root, which is just a new post
+     */
+    public boolean UpdateTree(String article, Integer newID, Integer replyTo) {
+        // TODO: call ReferencedTree
+    }
 
     private static boolean CheckValidPort(int port){
         Set<Integer> ports = new HashSet<>();
@@ -97,11 +159,11 @@ public class BulletinBoardServer extends UnicastRemoteObject implements Bulletin
         portToServerMap.put(2004, 5);
 
         try{
-            int serverNumber = portToServerMap.get(port);
-            BulletinBoardServerInterface server = new BulletinBoardServer(port, serverNumber);
+            int serverNum = portToServerMap.get(port);
+            BulletinBoardServerInterface server = new BulletinBoardServer(port, serverNum, args[1]);
             Registry registry = LocateRegistry.createRegistry(port);
-            registry.rebind("BulletinBoardServer_" + serverNumber, server);
-            System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNumber, port);
+            registry.rebind("BulletinBoardServer_" + serverNum, server);
+            System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);
         } catch(Exception e) {
             System.out.println("[SERVER]: Error occurred while launching server. It's possible that the port specified is currently in use.");
             System.out.println("[SERVER]: Exiting...");
