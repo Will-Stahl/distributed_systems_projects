@@ -8,10 +8,9 @@ public interface BulletinBoardServerInterface extends Remote
     public boolean Leave(String IP, int Port) throws RemoteException;
 
     // TODO?: add parameters to ensure that client has joined?
-    /* 
+    
     public boolean Publish(String article) throws RemoteException;
-    public boolean Read() throws RemoteException;
-    public boolean Choose(int articleID) throws RemoteException;
+    public String Read() throws RemoteException;
+    public String Choose(int articleID) throws RemoteException;
     public boolean Reply(String article, int replyTo) throws RemoteException;
-    */
 }

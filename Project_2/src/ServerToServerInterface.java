@@ -10,6 +10,6 @@ public interface ServerToServerInterface extends Remote
      */
     public boolean CoordinatorPost(String article) throws RemoteException;
     
-    public boolean CoordinatorRead() throws RemoteException;
-    public boolean CoordinatorChoose(int articleID) throws RemoteException;
+    public String CoordinatorRead() throws RemoteException;
+    public String CoordinatorChoose(int articleID) throws RemoteException;
 }

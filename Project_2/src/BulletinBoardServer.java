@@ -13,10 +13,10 @@ import java.util.*;
 // TODO: simulate network delays, probably via wrapper/decorator class
 // TODO: save contentTree with java serialization
 public class BulletinBoardServer extends UnicastRemoteObject
-implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
+implements BulletinBoardServerInterface, ServerToServerInterface {
     
-    private Integer serverPort; 
-    private Integer serverNum;
+    private int serverPort; 
+    private int serverNum;
     private static ArrayList<BulletinBoardClient> clients = new ArrayList<>();
     private static ArrayList<String> articles = new ArrayList<>();
     private final int MAX_CLIENTS = 5;
@@ -27,40 +27,37 @@ implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
     private int coordPort;
     private String coordHost;
     private int nextID;
-    //private ConsistencyStrategy cStrat;  // initialize to specifc strategy
-    //private ReferencedTree contentTree;  // article tree data structure
+    private ConsistencyStrategy cStrat;  // initialize to specifc strategy
+    private ReferencedTree contentTree;  // article tree data structure
 
     public BulletinBoardServer(int serverPort, int serverNum,
         String consistency) throws RemoteException{
         this.serverPort = serverPort;
         this.serverNum = serverNum;
         nextID = 1;
-        /* 
+        
         contentTree = new ReferencedTree();
         
         // TODO: intialize article tree, maybe find coordinator, initialize consitency strategy object
         if (consistency.equals("sequential")) {
             cStrat = new SequentialStrategy();
         }
-        else if (consistency.equals("quorum")) {
+        // else if (consistency.equals("quorum")) {
 
-        }
-        else if (consistency.equals("readyourwrites")) {
+        // }
+        // else if (consistency.equals("readyourwrites")) {
 
-        }
+        // }
         else {
             System.out.println("Invalid strategy entered, defaulting to sequential");
             cStrat = new SequentialStrategy();
-        }*/
+        }
     }
 
     public int GetServerPort() throws RemoteException{
         return serverPort;
     }
 
-    public int GetServerNumber(){
-        return serverNum;
-    }
 
     public boolean Join(String IP, int Port) throws RemoteException
     {
@@ -107,13 +104,12 @@ implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
      * @param article content to publish
      * if primary server, uses strategy (non-remote method)
      * if not, uses RMI to contact primary
-     
+    */
     public boolean Publish(String article) throws RemoteException {
         int replyTo = 0;  // publishing replies to root
         if (coordNum == serverNum) {  // this server is the coordinator
             // increment nextID after call
-            return cStrat.ServerPublish(nextID++, article, serverPort,
-                                        serverNum, contentTree);
+            return cStrat.ServerPublish(nextID++, article, serverPort, this);
         }
         try{
             // else look up coordinator in registry, request it to publish
@@ -126,20 +122,18 @@ implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
             return false;
         }
     }
-    */
 
     /**
      * @param article content to publish
      * @param replyTo ID of article to reply to
      * if primary server, uses strategy (non-remote method)
      * if not, uses RMI to contact primary
-     
+    */
     public boolean Reply(String article, int replyTo) throws RemoteException {
         replyTo = 0;  // publishing replies to root
         if (coordNum == serverNum) {  // this server is the coordinator
             // increment nextID after call
-            return cStrat.ServerPublish(nextID++, article, serverPort,
-                                        serverNum, contentTree);
+            return cStrat.ServerPublish(nextID++, article, serverPort, this);
         }
         // else look up coordinator in registry, request it to publish
         try{
@@ -152,52 +146,48 @@ implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
             return false;
         }
         
-        
     }
-    */
 
     /**
      * returns indented string previewing all articles with ID
      * for now, we delegate viewing details to client
-     
-    public boolean Read() throws RemoteException {
+    */
+    public String Read() throws RemoteException {
         if (serverNum == coordNum) {  // if this server is the coordinator
-            //return cStrat.ServerRead();
-            return true;
+            return cStrat.ServerRead();
         }
 
+        // else look up coordinator in registry, request it to publish
         try{
-            // else look up coordinator in registry, request it to publish
             Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
             ServerToServerInterface coordServer = (ServerToServerInterface)
             registry.lookup("BulletinBoardServer_" + coordNum);
             return coordServer.CoordinatorRead();
         } catch (Exception e){
-            return false;
+            return "ERROR Read(): could not get result from coordinator";
         }
     }
-    */
+
 
     /**
      * @param articleID ID of article requested in full
-     
-    public boolean Choose(int articleID) throws RemoteException {
+    */
+    public String Choose(int articleID) throws RemoteException {
         if (coordNum == serverNum) {
-            //return cStrat.ServerChoose(articleID, contentTree);
-            return true;
+            return cStrat.ServerChoose(articleID, contentTree);
         }
 
+        // else look up coordinator in registry, request it to publish
         try{
-            // else look up coordinator in registry, request it to publish
             Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
             ServerToServerInterface coordServer = (ServerToServerInterface)
             registry.lookup("BulletinBoardServer_" + coordNum);
             return coordServer.CoordinatorChoose(articleID);
         } catch (Exception e){
-            return false;
+            return "ERROR Choose(): could not get result from coordinator";
         }
     }
-    */
+
 
     /**
      * from ServerToServerInterface
@@ -205,11 +195,16 @@ implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
      * @param replyTo ID of article to reply to
      * this server should be the coordinator
      * calls ServerPublish() using strategy object
-     
+     */
     public boolean CoordinatorPost(String article, int replyTo)
             throws RemoteException {
-        return cStrat.ServerPublish(article, serverPort, nextID++);
-    } */
+        try {
+            return cStrat.ServerPublish(nextID++, article, replyTo, this);
+        } catch (Exception e) {
+            return false;
+        } 
+    }
+
 
     /**
      * from ServerToServerInterface
@@ -218,36 +213,36 @@ implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
      * @param article string consisting of article
      * @param replyTo specify article to reply to 
      * if 0, it replies to root, which is just a new post
-     
+     */
     public boolean UpdateTree(int newID, String article, int replyTo)
                                 throws RemoteException {
-        //return contentTree.AddNode(newID, article, replyTo);
-        return true;
-    } */
+        try {
+            return contentTree.AddNode(newID, article, replyTo);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
 
     /**
      * should only be called on coordinator be non-coordinator
      * coordinator uses strategy to return article preview based
      * on chosen consistency
-     
+     */
     public String CoordinatorRead() throws RemoteException {
         // TODO: just call the consistency strategy onject, maybe control for some errors
         return "";
     } 
 
-    public boolean CoordinatorRead() throws RemoteException {
-        // TODO: just call the consistency strategy onject, maybe control for some errors
-        return false;
-    } */
 
     /**
      * from ServerToServerInterface
      * should only be called on coordinator server object
      * @param articleID ID if article to return in full
      * returns message if article isn't found
-     
+     */
     public String CoordinatorChoose(int articleID) throws RemoteException {
-        cStrat.ServerChoose(articleID);
+        return cStrat.ServerChoose(articleID, contentTree);
     } 
 
     public boolean CoordinatorPost(String article) throws RemoteException {
@@ -255,10 +250,6 @@ implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
         throw new UnsupportedOperationException("Unimplemented method 'CoordinatorPost'");
     }
 
-    public boolean CoordinatorChoose(int articleID) throws RemoteException {
-        //cStrat.ServerChoose(articleID);
-        return false;
-    } */
 
     private static boolean CheckValidPort(int port){
         Set<Integer> ports = new HashSet<>();
@@ -269,6 +260,23 @@ implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
         ports.add(2004);
 
         return ports.contains(port);
+    }
+
+    // =============== getters/setters ==================
+    public String GetCoordHost() {
+        return coordHost;
+    }
+
+    public int GetCoordPort() {
+        return coordPort;
+    }
+
+    public int GetServerNumber() {  // as in self server number
+        return serverNum;
+    }
+
+    public ReferencedTree GetTree() {
+        return contentTree;  // allow strategies to manipulate tree
     }
 
     public static void main(String[] args){
@@ -299,6 +307,8 @@ implements BulletinBoardServerInterface /*, ServerToServerInterface*/ {
         try{
             int serverNum = portToServerMap.get(port);
             BulletinBoardServerInterface server = new BulletinBoardServer(port, serverNum, args[1]);
+            System.out.println("\n[DEBUG]: before creating registry");
+            // TODO: constructor throwing exception? More print statements
             Registry registry = LocateRegistry.createRegistry(port);
             registry.rebind("BulletinBoardServer_" + serverNum, server);
             System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);

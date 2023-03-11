@@ -13,7 +13,7 @@ public interface ConsistencyStrategy
      * central server writes to peer servers according to strategy
      */
     public boolean ServerPublish(int nextID, String article, int replyTo,
-                        int selfServerNum, ReferencedTree contentTree);
+                        BulletinBoardServer selfServer);
 
     public String ServerRead();
     public String ServerChoose(int articleID, ReferencedTree contentTree);

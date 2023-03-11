@@ -11,12 +11,12 @@ public class ReferencedTree {
         public String article;
         public ArrayList<ReferencedNode> children;
 
-        public ReferencedNode(ID, article) {
+        public ReferencedNode(int ID, String article) {
             this.ID = ID;
             this.article = article;
         }
     }
-    private ArrayList<ReferencedNode> root;
+    private ReferencedNode root;
     private ArrayList<ReferencedNode> directList;
 
     public ReferencedTree() {
@@ -35,16 +35,16 @@ public class ReferencedTree {
      */
     public boolean AddNode(int newID, String article, int replyTo) {
         // TODO: use replyTo to index directList
-        ReferencedNode replyToNode = directList.at(replyTo);
+        ReferencedNode replyToNode = directList.get(replyTo);
         if (replyToNode == null) {
             return false;
         }
-        if (directList.length != newID) {
+        if (directList.size() != newID) {
             return false;  // tried to add wrong unique ID
         }
         ReferencedNode toAdd = new ReferencedNode(newID, article);
         toAdd.children = new ArrayList<ReferencedNode>();
-        replyToNode.add(toAdd);
+        replyToNode.children.add(toAdd);
         directList.add(toAdd);
         return true;
     }
@@ -77,7 +77,7 @@ public class ReferencedTree {
     }
 
     public String GetAtIndex(int idx) {
-        ReferencedNode node = directList.at(idx);
+        ReferencedNode node = directList.get(idx);
         if (node == null) {
             return null;
         }

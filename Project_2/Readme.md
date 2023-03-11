@@ -13,7 +13,7 @@ Compile client using the command:
 `javac BulletinBoardClient.java`
 
 Run client using the command: 
-`java BulletinBoardServer localhost`
+`java BulletinBoardClient localhost`
 
 When prompted to enter a command, type "join: 2000" for example to join a server running on port 2000. 
 

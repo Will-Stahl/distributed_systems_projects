@@ -10,28 +10,37 @@ public class SequentialStrategy implements ConsistencyStrategy {
      * @param nextID article ID to reply to
      * @param article contents of article to publish
      * @param replyTo article ID to reply to
-     * @param selfServerNum prevents from self-messaging
-     * @param contentTree pass in tree object so self can update it
+     * @param selfServer server object that called this function
      * returns false if underlying tree object returns false
      */
     public boolean ServerPublish(int nextID, String article, int replyTo,
-                        int selfServerNum, ReferencedTree contentTree) {
-        Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
-        result = true;
+                        BulletinBoardServer selfServer) {
+        Registry registry;
+        try {
+            registry = LocateRegistry.getRegistry(
+                    selfServer.GetCoordHost(), selfServer.GetCoordPort());
+        } catch (RemoteException e) {
+            return false;
+        }
+        boolean result = true;
 
         // update self
-        if (contentTree.AddNode(nextID, article, replyTo)) {
+        if (selfServer.GetTree().AddNode(nextID, article, replyTo)) {
             return false;  // local update failed, do not update others
         }
 
         // RMI others to update
         for (int i = 1; i <= 5; i++) {
-            if (i == selfServerNum) {  // do not contact self
+            if (i == selfServer.GetServerNumber()) {  // do not contact self
                 continue;
             }
-            ServerToServerInterface peer = (ServerToServerInterface)
-                registry.lookup("BulletinBoardServer_" + i);
-            if (!peer.UpdateTree(nextID, article, replyTo)) {
+            try {
+                ServerToServerInterface peer = (ServerToServerInterface)
+                    registry.lookup("BulletinBoardServer_" + i);
+                if (!peer.UpdateTree(nextID, article, replyTo)) {
+                    result = false;
+                }
+            } catch (Exception e) {
                 result = false;
             }
         }
@@ -43,8 +52,8 @@ public class SequentialStrategy implements ConsistencyStrategy {
     }
 
     public String ServerChoose(int articleID, ReferencedTree contentTree) {
-        String result;
-        if (result = contentTree.GetAtIndex(articleID) == null) {
+        String result = contentTree.GetAtIndex(articleID);
+        if (result == null) {
             return "Article not found for ID: " + articleID;
         }
         return result;
