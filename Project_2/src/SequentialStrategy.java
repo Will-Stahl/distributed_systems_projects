@@ -5,28 +5,49 @@ import java.rmi.registry.Registry;
 import java.net.InetAddress;
 
 public class SequentialStrategy implements ConsistencyStrategy {
-    public boolean ServerPublish(String article, Integer selfServerNum,
-                                    Integer nextID) {
-        // TODO: tell all other servers to update, update self
-        // backups acknowledge via return val
+
+    /**
+     * @param nextID article ID to reply to
+     * @param article contents of article to publish
+     * @param replyTo article ID to reply to
+     * @param selfServerNum prevents from self-messaging
+     * @param contentTree pass in tree object so self can update it
+     * returns false if underlying tree object returns false
+     */
+    public boolean ServerPublish(int nextID, String article, int replyTo,
+                        int selfServerNum, ReferencedTree contentTree) {
         Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
-        for (Integer i = 2000; i < 2005; i++) {
-            if (i - 1999 == selfServerNum) {  // do not contact self
+        result = true;
+
+        // update self
+        if (contentTree.AddNode(nextID, article, replyTo)) {
+            return false;  // local update failed, do not update others
+        }
+
+        // RMI others to update
+        for (int i = 1; i <= 5; i++) {
+            if (i == selfServerNum) {  // do not contact self
                 continue;
             }
             ServerToServerInterface peer = (ServerToServerInterface)
-                registry.lookup("BulletinBoardServer_" + i - 1999);
-            peer.UpdateTree(/* TODO: parameters are undecided*/);  // specify what this message replies to
+                registry.lookup("BulletinBoardServer_" + i);
+            if (!peer.UpdateTree(nextID, article, replyTo)) {
+                result = false;
+            }
         }
-        return false;
+        return result;
     }
 
     public String ServerRead() {
         return "";
     }
 
-    public String ServerChoose(Integer articleID) {
-        return "";
+    public String ServerChoose(int articleID, ReferencedTree contentTree) {
+        String result;
+        if (result = contentTree.GetAtIndex(articleID) == null) {
+            return "Article not found for ID: " + articleID;
+        }
+        return result;
     }
 
     public boolean ServerReply(String article) {

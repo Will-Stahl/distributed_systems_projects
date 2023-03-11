@@ -13,7 +13,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
         return "";
     }
 
-    public String ServerChoose(Integer articleID) {
+    public String ServerChoose(int articleID) {
         return "";
     }
 
