@@ -34,8 +34,8 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         String consistency) throws RemoteException{
         this.serverPort = serverPort;
         this.serverNum = serverNum;
+        coordNum = 5;  // coordinator hard-chosen as highest number for now
         nextID = 1;
-        
         contentTree = new ReferencedTree();
         
         // TODO: intialize article tree, maybe find coordinator, initialize consitency strategy object
@@ -307,12 +307,11 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         try{
             int serverNum = portToServerMap.get(port);
             BulletinBoardServerInterface server = new BulletinBoardServer(port, serverNum, args[1]);
-            System.out.println("\n[DEBUG]: before creating registry");
-            // TODO: constructor throwing exception? More print statements
             Registry registry = LocateRegistry.createRegistry(port);
             registry.rebind("BulletinBoardServer_" + serverNum, server);
             System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);
         } catch(Exception e) {
+            // e.printStackTrace();  // DEBUG
             System.out.println("\n[SERVER]: Error occurred while launching server. It's possible that the port specified is currently in use.");
             System.out.println("[SERVER]: Exiting...");
             System.exit(0);

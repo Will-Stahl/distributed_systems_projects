@@ -20,9 +20,9 @@ public class ReferencedTree {
     private ArrayList<ReferencedNode> directList;
 
     public ReferencedTree() {
-        root.ID = 0;
-        root.article = "";
+        root = new ReferencedNode(0, "root node");
         root.children = new ArrayList<ReferencedNode>();
+        directList = new ArrayList<ReferencedNode>();
         directList.add(root);
     }
 
