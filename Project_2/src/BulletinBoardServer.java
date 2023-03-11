@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.*;
 
 // TODO: simulate network delays, probably via wrapper/decorator class
+// TODO: save contentTree with java serialization
 public class BulletinBoardServer extends UnicastRemoteObject
 implements BulletinBoardServerInterface, ServerToServerInterface {
     
