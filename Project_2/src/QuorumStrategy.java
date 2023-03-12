@@ -5,6 +5,7 @@ import java.rmi.registry.Registry;
 import java.net.InetAddress;
 
 public class QuorumStrategy implements ConsistencyStrategy {
+    // this strategy will need some extra member variables (NR, NW)
     public boolean ServerPublish(String article) {
         return false;
     }

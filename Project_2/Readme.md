@@ -18,3 +18,6 @@ Run client using the command:
 When prompted to enter a command, type "join: 2000" for example to join a server running on port 2000. 
 
 The port number used above can be 2000, 2001, 2002, 2003 and 2004. Any other port number will result in the program terminating gracefully.
+
+## Assumptions
+(assumption for now: "In quorum consistency, read operations do not contact the central server for coordination, but write operations to contact the central server.")

@@ -13,6 +13,9 @@ public class SequentialStrategy implements ConsistencyStrategy {
      * @param selfServer server object that called this function
      * returns false if underlying tree object returns false
      */
+    // TODO: refactor so that BulletinBoardServer doesn't have to check
+    //       whether it is the coordinator or not, this method should
+    //       do it and call the coordinator if needed
     public boolean ServerPublish(int nextID, String article, int replyTo,
                         BulletinBoardServer selfServer) {
         Registry registry;
@@ -47,10 +50,18 @@ public class SequentialStrategy implements ConsistencyStrategy {
         return result;
     }
 
-    public String ServerRead() {
-        return "";
+    /**
+     * @param selfServer server object that called this method
+     * sequential consistency, just read from local
+     */
+    public String ServerRead(BulletinBoardServer selfServer) {
+        return selfServer.GetTree().ReadTree();
     }
 
+    /**
+     * @param articleID article requested by client
+     * @param contentTree article tree from server object that called this
+     */
     public String ServerChoose(int articleID, ReferencedTree contentTree) {
         String result = contentTree.GetAtIndex(articleID);
         if (result == null) {
@@ -59,7 +70,8 @@ public class SequentialStrategy implements ConsistencyStrategy {
         return result;
     }
 
-    public boolean ServerReply(String article) {
-        return false;
-    }
+    // public boolean ServerReply(String article) {
+    //     return false;
+    // }
+
 }

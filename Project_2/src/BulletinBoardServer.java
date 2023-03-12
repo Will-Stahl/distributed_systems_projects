@@ -38,7 +38,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         nextID = 1;
         contentTree = new ReferencedTree();
         
-        // TODO: intialize article tree, maybe find coordinator, initialize consitency strategy object
         if (consistency.equals("sequential")) {
             cStrat = new SequentialStrategy();
         }
@@ -153,19 +152,19 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * for now, we delegate viewing details to client
     */
     public String Read() throws RemoteException {
-        if (serverNum == coordNum) {  // if this server is the coordinator
-            return cStrat.ServerRead();
-        }
+        // if (serverNum == coordNum) {  // if this server is the coordinator
+        return cStrat.ServerRead(this);
+        // }
 
         // else look up coordinator in registry, request it to publish
-        try{
-            Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
-            ServerToServerInterface coordServer = (ServerToServerInterface)
-            registry.lookup("BulletinBoardServer_" + coordNum);
-            return coordServer.CoordinatorRead();
-        } catch (Exception e){
-            return "ERROR Read(): could not get result from coordinator";
-        }
+        // try{
+        //     Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
+        //     ServerToServerInterface coordServer = (ServerToServerInterface)
+        //     registry.lookup("BulletinBoardServer_" + coordNum);
+        //     return coordServer.CoordinatorRead();
+        // } catch (Exception e){
+        //     return "ERROR Read(): could not get result from coordinator";
+        // }
     }
 
 
@@ -229,10 +228,10 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * coordinator uses strategy to return article preview based
      * on chosen consistency
      */
-    public String CoordinatorRead() throws RemoteException {
-        // TODO: just call the consistency strategy onject, maybe control for some errors
-        return "";
-    } 
+    // public String CoordinatorRead() throws RemoteException {
+    //     // TODO: just call the consistency strategy onject, maybe control for some errors
+    //     return "";
+    // } 
 
 
     /**
