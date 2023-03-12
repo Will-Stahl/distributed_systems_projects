@@ -38,8 +38,9 @@ public class BulletinBoardClient {
         System.out.println("2. Enter \"Leave\" to leave the group server.");
         System.out.println("3. Enter \"Post\" to post an article.");
         System.out.println("4. Enter \"Read\" to read a list of articles.");
-        System.out.println("4. Enter \"Choose\" to choose one of the articles and display its contents.");
-        System.out.println("4. Enter \"Reply\" to reply to an existing article (also posts a new article).");
+        System.out.println("5. Enter \"Choose\" to choose one of the articles and display its contents.");
+        System.out.println("6. Enter \"Reply\" to reply to an existing article (also posts a new article).");
+        System.out.println("7. Enter \"Display\" to display all articles currently available.");
     }
 
     public String GetAndValidateClientRequest(){
@@ -50,17 +51,50 @@ public class BulletinBoardClient {
             clientRequest = sc.nextLine();
             String lowerCaseRequest = clientRequest.trim().toLowerCase();
 
-            // If we have a join or leave essage, then we can simply break from the loop
-            if ((lowerCaseRequest.startsWith("join") ||  
-                lowerCaseRequest.startsWith("leave")) &&
-                ValidJoinOrLeaveRequestFormat(lowerCaseRequest)){
-                break;
+            if (lowerCaseRequest.startsWith("display")){
+                // TODO: Add code for displaying available articles
+                //System.out.println("");
+                //break;
             }
 
-            System.out.println("\nOnly the following 6 operations can be performed by the client:");
-            DisplayOptions();
+            // If we have a join or leave essage, then we can simply break from the loop
+            if ((lowerCaseRequest.startsWith("join") ||  
+                lowerCaseRequest.startsWith("leave"))){
+                    if (ValidJoinOrLeaveRequestFormat(lowerCaseRequest)) break;
+            } else if (ValidReplyRequest(lowerCaseRequest) || ValidChooseRequest(lowerCaseRequest) || 
+                        ValidReadRequest(lowerCaseRequest) ||ValidPostRequest(lowerCaseRequest)) {
+                break;
+            } else if (lowerCaseRequest.startsWith("post:")){
+                System.out.println("[CLIENT]: Invalid Post format. Please use \"Post: <Article Title>;<Article Contents>\"");
+            } else if (lowerCaseRequest.startsWith("read:")){
+                System.out.println("[CLIENT]: Invalid Read format. Please use \"Read: <List of Article IDs separated by commas>\"");
+            } else if (lowerCaseRequest.startsWith("choose:")){
+                System.out.println("[CLIENT]: Invalid Choose format. Please use \"Choose: <Article ID>\"");
+            } else if (lowerCaseRequest.startsWith("reply:")){
+                System.out.println("[CLIENT]: Invalid Choose format. Please use \"Reply: <Article ID>;<Article Title>;<Article Contents>\"");
+            } else{
+                System.out.println("\nOnly the following 7 operations can be performed by the client:");
+                DisplayOptions();
+            }
         }
         return clientRequest.trim();
+    }
+
+    // TODO: validate command line requests for all 4 functions
+    private boolean ValidReplyRequest(String lowerCaseRequest) {
+        return false;
+    }
+
+    private boolean ValidChooseRequest(String lowerCaseRequest) {
+        return false;
+    }
+
+    private boolean ValidReadRequest(String lowerCaseRequest) {
+        return false;
+    }
+
+    private boolean ValidPostRequest(String lowerCaseRequest) {
+        return false;
     }
 
     private static boolean ValidJoinOrLeaveRequestFormat(String lowerCaseRequest){
@@ -70,21 +104,18 @@ public class BulletinBoardClient {
             return false;
         }
 
-        int serverPort = 0;
         try{
-            serverPort = Integer.parseInt(parts[1].trim());
+            int serverPort = Integer.parseInt(parts[1].trim());
+            // If port is invalid, then print error message and exit.
+            if (!CheckValidPort(serverPort)){
+                System.out.println("\n[CLIENT]: Port number specified is invalid. Valid port numbers are 2000, 2001, 2002, 2003 and 2004");
+                return false;
+            }
+            return true;
         } catch (Exception e){
             System.out.println("[CLIENT]: Server port should be an integer value such as 2000, 2001, 2002, 2003 or 2004");
             return false;
         }
-
-        // If port is invalid, then print error message and exit.
-        if (!CheckValidPort(serverPort)){
-            System.out.println("\n[CLIENT]: Port number specified is invalid. Valid port numbers are 2000, 2001, 2002, 2003 and 2004");
-            return false;
-        }
-        
-        return true;
     }
 
     /**
@@ -94,31 +125,52 @@ public class BulletinBoardClient {
      */
     public void SendClientRequestToServer(String hostName, InetAddress address){
         String clientRequest = GetAndValidateClientRequest();
+        try{
+            if (clientRequest.startsWith("join") || clientRequest.startsWith("leave")){
+                HandleJoinOrLeaveRequests(hostName, IP, clientPort, clientRequest);
+            } else {
+                // TODO: Get server object depending on consistency strategy
+                if (clientRequest.startsWith("post")){
+                    // TODO: Call server post function
+                } else if (clientRequest.startsWith("read")){
+                    // TODO: Call server read function
+                } else if (clientRequest.startsWith("choose")){
+                    // TODO: Call server choose function
+                } else if (clientRequest.startsWith("reply")){
+                    // TODO: Call server reply function
+                }
+            } 
+        } catch (RemoteException e){
+            System.out.println("[CLIENT]: No response from server since it is offline. Try joining another server!");
+        }
+    }
+
+    private static void HandleJoinOrLeaveRequests(String hostName, String IP, int clientPort, String clientRequest) throws RemoteException{
         String[] parts = clientRequest.split(":");
         String command = parts[0].toLowerCase();
         int serverPort = Integer.parseInt(parts[1].trim());
+        
         BulletinBoardServerInterface server = ConnectToServer(hostName, serverPort);
 
-        try{
-            if (command.equals("join")){
-                boolean join = server.Join(IP, clientPort);
-                if (join){
-                    System.out.printf("[CLIENT]: Client at port %d successfully joined server at port %d.\n", clientPort, server.GetServerPort());
-                } else {
-                    System.out.printf("[CLIENT]: It's possible that server capacity has been reached or the IP address provided is invalid.\n", clientPort, server.GetServerPort());
-                }
-            } else if (command.equals("leave")){
-                boolean leave = server.Leave(IP, clientPort);
-                if (leave){
-                    System.out.printf("[CLIENT]: Client at port %d successfully left server at port %d.\n", clientPort, server.GetServerPort());
-                } else {
-                    System.out.printf("[CLIENT]: Error occurred while leaving server at port %d.\n", clientPort, server.GetServerPort());
-                }
+        if (server == null){
+            System.out.printf("[CLIENT]: Server at port %d has not been started yet and cannot be connected to.\n", serverPort);
+            return;
+        }
+
+        if (command.equals("join")){
+            boolean join = server.Join(IP, clientPort);
+            if (join){
+                System.out.printf("[CLIENT]: Client at port %d successfully joined server at port %d.\n", clientPort, server.GetServerPort());
+            } else {
+                System.out.println("[CLIENT]: It's possible that server capacity has been reached or the IP address provided is invalid or the client is already part of the server.");
             }
-        } catch (RemoteException e){
-            System.out.println("[CLIENT]: No response from server since it is offline. Try joining another server!");
-            e.printStackTrace();
-            System.exit(0);
+        } else {
+            boolean leave = server.Leave(IP, clientPort);
+            if (leave){
+                System.out.printf("[CLIENT]: Client at port %d successfully left server at port %d.\n", clientPort, server.GetServerPort());
+            } else {
+                System.out.printf("[CLIENT]: This client is not currently part of the server at port %d\n", server.GetServerPort());
+            }
         }
     }
 
@@ -135,13 +187,10 @@ public class BulletinBoardClient {
             int serverNumber = portToServerMap.get(serverPort);
             Registry registry = LocateRegistry.getRegistry(hostName, serverPort);
             BulletinBoardServerInterface server = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_" + serverNumber);
-            System.out.println("\n[CLIENT]: Registry lookup was successful! Joining server now...");
+            System.out.println("\n[CLIENT]: Registry lookup was successful!");
             return server;
         } catch (Exception e){
-            System.out.println("\n[CLIENT]: Error occurred while looking up the registry name. Make sure the server is running on the respective port before running the client script.");
-            System.out.println("[CLIENT]: Exiting...");
-            e.printStackTrace();
-            System.exit(0);
+            System.out.println("\n[CLIENT]: Error occurred while looking up the registry name.");
         }
         return null;
     }

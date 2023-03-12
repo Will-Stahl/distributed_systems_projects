@@ -17,7 +17,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     
     private int serverPort; 
     private int serverNum;
-    private static ArrayList<BulletinBoardClient> clients = new ArrayList<>();
+    private static ArrayList<ClientInfo> clients = new ArrayList<>();
     private static ArrayList<String> articles = new ArrayList<>();
     private final int MAX_CLIENTS = 5;
     private static int clientCount = 0;
@@ -60,7 +60,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
 
     public boolean Join(String IP, int Port) throws RemoteException
     {
-        
         if (Port > 65535 || Port < 0) {
             System.out.println("[SERVER]: Client port number is invalid and cannot be used for communication.");
             return false;
@@ -73,9 +72,18 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
             return false;
         }
 
+        // If client has been added earlier, then don't add them again.
+        for (int i = 0; i < clients.size(); i++) {
+            ClientInfo cl = clients.get(i);
+            if (cl.GetIP().equals(IP) && cl.GetPort() == Port) {
+                System.out.println("[SERVER]: Client is already part of the group server.");
+                return false;
+            }
+        }
+
         // check for valid IP address
         if (IsValidIPAddress(IP)){
-            // TODO: Add clients
+            clients.add(new ClientInfo(IP, Port));
             System.out.printf("\n[SERVER]: Added new client with IP: %s, Port: %d\n", IP, Port);
             return true;
         }
@@ -96,7 +104,23 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     }
     
     public boolean Leave(String IP, int Port) throws RemoteException{
-        return false;
+        // check for subscriber in Subscribers
+        ClientInfo clientPtr = null;
+        for (int i = 0; i < clients.size(); i++) {
+            ClientInfo Sub = clients.get(i);
+            if (Sub.GetIP().equals(IP) && Sub.GetPort() == Port) {
+                clientPtr = clients.get(i);
+                clients.remove(i);
+            }
+        }
+        if (clientPtr == null) {
+            System.out.printf("[SERVER]: Client at IP Address %s is and Port %d is not currently part of the server.\n", IP, Port);
+            return false;
+        }
+        
+        clientCount -= 1;
+        System.out.printf("[SERVER]: Removed client at address %s and Port %d.\n", IP, Port);
+        return true;
     }
 
     /**
