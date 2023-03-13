@@ -7,16 +7,15 @@ import java.net.InetAddress;
 public class SequentialStrategy implements ConsistencyStrategy {
 
     /**
-     * @param nextID article ID to reply to
      * @param article contents of article to publish
-     * @param replyTo article ID to reply to
+     * @param replyTo article ID to reply to (0 if not a reply)
      * @param selfServer server object that called this function
      * returns false if underlying tree object returns false
      */
     // TODO: refactor so that BulletinBoardServer doesn't have to check
     //       whether it is the coordinator or not, this method should
     //       do it and call the coordinator if needed
-    public boolean ServerPublish(int nextID, String article, int replyTo,
+    public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer) {
         Registry registry;
         try {
@@ -25,9 +24,22 @@ public class SequentialStrategy implements ConsistencyStrategy {
         } catch (RemoteException e) {
             return false;
         }
-        boolean result = true;
 
-        // update self
+        // not the central server
+        if (selfServer.GetServerPort() != selfServer.GetCoordPort()) {
+            try {
+                ServerToServerInterface coord = (ServerToServerInterface)
+                            registry.lookup(
+                            "BulletinBoardServer_" + selfServer.GetCoordNum());
+                return coord.CoordinatorPost(article, replyTo);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        // is the central server, update self
+        int nextID = selfServer.GetCurrID();
+        boolean result = true;
         if (selfServer.GetTree().AddNode(nextID, article, replyTo)) {
             return false;  // local update failed, do not update others
         }
@@ -47,6 +59,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
                 result = false;
             }
         }
+        selfServer.IncrementID();
         return result;
     }
 
@@ -61,6 +74,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
     /**
      * @param articleID article requested by client
      * @param contentTree article tree from server object that called this
+     * sequential consistency, just read from local
      */
     public String ServerChoose(int articleID, ReferencedTree contentTree) {
         String result = contentTree.GetAtIndex(articleID);
@@ -69,9 +83,5 @@ public class SequentialStrategy implements ConsistencyStrategy {
         }
         return result;
     }
-
-    // public boolean ServerReply(String article) {
-    //     return false;
-    // }
 
 }

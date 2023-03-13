@@ -6,19 +6,17 @@ import java.net.InetAddress;
 
 public class QuorumStrategy implements ConsistencyStrategy {
     // this strategy will need some extra member variables (NR, NW)
-    public boolean ServerPublish(String article) {
+    public boolean ServerPublish(String article, int replyTo,
+                        BulletinBoardServer selfServer) {
         return false;
     }
 
-    public String ServerRead() {
+    public String ServerRead(BulletinBoardServer selfServer) {
         return "";
     }
 
-    public String ServerChoose(int articleID) {
+    public String ServerChoose(int articleID, ReferencedTree contentTree) {
         return "";
     }
 
-    public boolean ServerReply(String article) {
-        return false;
-    }
 }

@@ -5,19 +5,17 @@ import java.rmi.registry.Registry;
 import java.net.InetAddress;
 
 public class ReadYourWritesStrategy implements ConsistencyStrategy {
-    public boolean ServerPublish(String article) {
+    public boolean ServerPublish(String article, int replyTo,
+                        BulletinBoardServer selfServer) {
         return false;
     }
 
-    public String ServerRead() {
+    public String ServerRead(BulletinBoardServer selfServer) {
         return "";
     }
 
-    public String ServerChoose(int articleID) {
+    public String ServerChoose(int articleID, ReferencedTree contentTree) {
         return "";
     }
 
-    public boolean ServerReply(String article) {
-        return false;
-    }
 }

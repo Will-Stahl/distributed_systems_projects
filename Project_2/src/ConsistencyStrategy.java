@@ -9,10 +9,9 @@ public interface ConsistencyStrategy
     // TODO: the implementations might not store data, so methods might be static
     
     /**
-     * central server calls this
-     * central server writes to peer servers according to strategy
+     *
      */
-    public boolean ServerPublish(int nextID, String article, int replyTo,
+    public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer);
 
     /**
@@ -21,5 +20,4 @@ public interface ConsistencyStrategy
      */
     public String ServerRead(BulletinBoardServer selfServer);
     public String ServerChoose(int articleID, ReferencedTree contentTree);
-    // public boolean ServerReply(String article);
 }

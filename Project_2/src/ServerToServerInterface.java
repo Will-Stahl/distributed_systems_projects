@@ -8,7 +8,7 @@ public interface ServerToServerInterface extends Remote
     /**
      * Replica contacts coordinator with this method, asking it to post
      */
-    public boolean CoordinatorPost(String article) throws RemoteException;
+    public boolean CoordinatorPost(String article, int replyTo) throws RemoteException;
     
     // public String CoordinatorRead() throws RemoteException;
     public String CoordinatorChoose(int articleID) throws RemoteException;

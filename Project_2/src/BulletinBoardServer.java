@@ -53,9 +53,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         }
     }
 
-    public int GetServerPort() throws RemoteException{
-        return serverPort;
-    }
 
 
     public boolean Join(String IP, int Port) throws RemoteException
@@ -125,25 +122,10 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
 
     /**
      * @param article content to publish
-     * if primary server, uses strategy (non-remote method)
-     * if not, uses RMI to contact primary
-    */
+     * calls strategy
+     */
     public boolean Publish(String article) throws RemoteException {
-        int replyTo = 0;  // publishing replies to root
-        if (coordNum == serverNum) {  // this server is the coordinator
-            // increment nextID after call
-            return cStrat.ServerPublish(nextID++, article, serverPort, this);
-        }
-        try{
-            // else look up coordinator in registry, request it to publish
-            Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
-            ServerToServerInterface coordServer = (ServerToServerInterface)
-            registry.lookup("BulletinBoardServer_" + coordNum);
-            //return coordServer.CoordinatorPost(article, replyTo);
-            return true;
-        } catch (Exception e){
-            return false;
-        }
+        return cStrat.ServerPublish(article, 0, this);
     }
 
     /**
@@ -153,22 +135,8 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * if not, uses RMI to contact primary
     */
     public boolean Reply(String article, int replyTo) throws RemoteException {
-        replyTo = 0;  // publishing replies to root
-        if (coordNum == serverNum) {  // this server is the coordinator
-            // increment nextID after call
-            return cStrat.ServerPublish(nextID++, article, serverPort, this);
-        }
-        // else look up coordinator in registry, request it to publish
-        try{
-            Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
-            ServerToServerInterface coordServer = (ServerToServerInterface)
-            registry.lookup("BulletinBoardServer_" + coordNum);
-            //return coordServer.CoordinatorPost(article, replyTo);
-            return true;
-        } catch (Exception e){
-            return false;
-        }
-        
+        return cStrat.ServerPublish(article, replyTo, this);
+        // same as call to ServerPublish() in Publish(), but with replyTo
     }
 
     /**
@@ -196,33 +164,21 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * @param articleID ID of article requested in full
     */
     public String Choose(int articleID) throws RemoteException {
-        if (coordNum == serverNum) {
-            return cStrat.ServerChoose(articleID, contentTree);
-        }
-
-        // else look up coordinator in registry, request it to publish
-        try{
-            Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
-            ServerToServerInterface coordServer = (ServerToServerInterface)
-            registry.lookup("BulletinBoardServer_" + coordNum);
-            return coordServer.CoordinatorChoose(articleID);
-        } catch (Exception e){
-            return "ERROR Choose(): could not get result from coordinator";
-        }
+        return cStrat.ServerChoose(articleID, contentTree);
     }
 
 
     /**
      * from ServerToServerInterface
      * @param article content to publish
-     * @param replyTo ID of article to reply to
-     * this server should be the coordinator
+     * @param replyTo ID of article to reply
+     * this server should be the coordinator if this method is called on it
      * calls ServerPublish() using strategy object
      */
     public boolean CoordinatorPost(String article, int replyTo)
             throws RemoteException {
         try {
-            return cStrat.ServerPublish(nextID++, article, replyTo, this);
+            return cStrat.ServerPublish(article, replyTo, this);
         } catch (Exception e) {
             return false;
         } 
@@ -248,17 +204,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
 
 
     /**
-     * should only be called on coordinator be non-coordinator
-     * coordinator uses strategy to return article preview based
-     * on chosen consistency
-     */
-    // public String CoordinatorRead() throws RemoteException {
-    //     // TODO: just call the consistency strategy onject, maybe control for some errors
-    //     return "";
-    // } 
-
-
-    /**
      * from ServerToServerInterface
      * should only be called on coordinator server object
      * @param articleID ID if article to return in full
@@ -266,11 +211,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      */
     public String CoordinatorChoose(int articleID) throws RemoteException {
         return cStrat.ServerChoose(articleID, contentTree);
-    } 
-
-    public boolean CoordinatorPost(String article) throws RemoteException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'CoordinatorPost'");
     }
 
 
@@ -285,6 +225,10 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         return ports.contains(port);
     }
 
+    public void IncrementID() {
+        nextID++;
+    }
+
     // =============== getters/setters ==================
     public String GetCoordHost() {
         return coordHost;
@@ -294,12 +238,24 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         return coordPort;
     }
 
+    public int GetCoordNum() {
+        return coordNum;
+    }
+
     public int GetServerNumber() {  // as in self server number
         return serverNum;
     }
 
+    public int GetServerPort() /*throws RemoteException*/{  // TODO: should it throw?
+        return serverPort;
+    }
+
     public ReferencedTree GetTree() {
         return contentTree;  // allow strategies to manipulate tree
+    }
+
+    public int GetCurrID() {
+        return nextID;
     }
 
     public static void main(String[] args){
