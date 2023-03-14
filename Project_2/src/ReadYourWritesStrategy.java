@@ -4,6 +4,9 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.net.InetAddress;
 
+
+// TODO: use blocking or nonblocking?
+// Nonblocking probably can't guarantee this consistency
 public class ReadYourWritesStrategy implements ConsistencyStrategy {
     public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer) {
