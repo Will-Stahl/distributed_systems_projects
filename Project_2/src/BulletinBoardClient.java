@@ -11,7 +11,7 @@ import java.lang.reflect.Array;
 import java.util.*;
 
 public class BulletinBoardClient {
-    private ArrayList<BulletinBoardServer> joinedServers;
+    private static ArrayList<BulletinBoardServerInterface> joinedServers;
     private ArrayList<String> articles;
     private int clientPort;
     private String IP;
@@ -82,19 +82,19 @@ public class BulletinBoardClient {
 
     // TODO: validate command line requests for all 4 functions
     private boolean ValidReplyRequest(String lowerCaseRequest) {
-        return false;
+        return true;
     }
 
     private boolean ValidChooseRequest(String lowerCaseRequest) {
-        return false;
+        return true;
     }
 
     private boolean ValidReadRequest(String lowerCaseRequest) {
-        return false;
+        return true;
     }
 
     private boolean ValidPostRequest(String lowerCaseRequest) {
-        return false;
+        return true;
     }
 
     private static boolean ValidJoinOrLeaveRequestFormat(String lowerCaseRequest){
@@ -129,15 +129,21 @@ public class BulletinBoardClient {
             if (clientRequest.startsWith("join") || clientRequest.startsWith("leave")){
                 HandleJoinOrLeaveRequests(hostName, IP, clientPort, clientRequest);
             } else {
+                // If no servers have been joined yet, then we cant call post, read, choose or reply
+                if (joinedServers.size() == 0) return;
+
+                // Just get the first server for now
+                BulletinBoardServerInterface server = joinedServers.get(0);
+
                 // TODO: Get server object depending on consistency strategy
                 if (clientRequest.startsWith("post")){
-                    // TODO: Call server post function
+                    //server.Publish();
                 } else if (clientRequest.startsWith("read")){
-                    // TODO: Call server read function
+                    //server.Read();
                 } else if (clientRequest.startsWith("choose")){
-                    // TODO: Call server choose function
+                    //server.Choose(clientPort);
                 } else if (clientRequest.startsWith("reply")){
-                    // TODO: Call server reply function
+                    //server.Reply(clientRequest, clientPort);
                 }
             } 
         } catch (RemoteException e){
@@ -161,8 +167,10 @@ public class BulletinBoardClient {
             boolean join = server.Join(IP, clientPort);
             if (join){
                 System.out.printf("[CLIENT]: Client at port %d successfully joined server at port %d.\n", clientPort, server.GetServerPort());
+                joinedServers.add(server);
             } else {
                 System.out.println("[CLIENT]: It's possible that server capacity has been reached or the IP address provided is invalid or the client is already part of the server.");
+                joinedServers.add(server);
             }
         } else {
             boolean leave = server.Leave(IP, clientPort);
