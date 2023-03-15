@@ -12,9 +12,6 @@ public class SequentialStrategy implements ConsistencyStrategy {
      * @param selfServer server object that called this function
      * returns false if underlying tree object returns false
      */
-    // TODO: refactor so that BulletinBoardServer doesn't have to check
-    //       whether it is the coordinator or not, this method should
-    //       do it and call the coordinator if needed
     public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer) {
         Registry registry;
