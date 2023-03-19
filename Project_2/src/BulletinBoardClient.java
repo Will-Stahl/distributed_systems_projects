@@ -66,7 +66,7 @@ public class BulletinBoardClient {
             } else if (lowerCaseRequest.startsWith("post")){
                 if (ValidPostRequest(lowerCaseRequest)) break;
             } else if (lowerCaseRequest.startsWith("read")){
-                if (ValidReadRequest(lowerCaseRequest)) break;
+                break;
             } else if (lowerCaseRequest.startsWith("choose")){
                 if (ValidChooseRequest(lowerCaseRequest)) break;
             } else if (lowerCaseRequest.startsWith("reply")){
@@ -101,45 +101,6 @@ public class BulletinBoardClient {
         if (articleParts.length != 2){
             System.out.println("[CLIENT]: Either title or contents are missing. Article format should be \"<Article Title>;<Article Contents>\"");
             return false;
-        }
-
-        return true;
-    }
-
-    private boolean ValidReadRequest(String lowerCaseRequest) {
-        if (!lowerCaseRequest.startsWith("read:")){
-            System.out.println("[CLIENT]:  Colon missing. Please use \"Read: <List of Article IDs separated by commas>\"");
-            return false;
-        }
-
-        String[] parts = lowerCaseRequest.split(":");
-        if (parts.length != 2){
-            System.out.println("[CLIENT]: Article IDs are missing. Please use \"Read: <List of Article IDs separated by commas>\"");
-            return false;
-        }
-
-        // Check if only commas are used as separaters
-        if (!parts[1].trim().contains(",")){
-            System.out.println("[CLIENT]: Commas are missing. Please use \"Read: <List of Article IDs separated by commas>\"");
-            return false;
-        }
-
-        
-        // Ensure that every ID format is "ID" followed by a number
-        String[] IDs = parts[1].trim().split(",");
-        for (String ID : IDs){
-            ID = ID.trim();
-            System.out.println(ID);
-            if (!ID.startsWith("id")){
-                System.out.println("[CLIENT]: ID format must begin with \"ID\". Example: \"ID1\", \"ID2\" and so on.");
-                return false;
-            }
-
-            String articleNumber = ID.substring(2, ID.length());
-            if (!articleNumber.matches("\\d+")){
-                System.out.println("[CLIENT]: Article ID has to have a number. Example: \"ID1\", \"ID2\" and so on.");
-                return false;
-            }
         }
 
         return true;
@@ -255,9 +216,9 @@ public class BulletinBoardClient {
 
                 if (clientRequest.startsWith("post:")){
                     String[] parts = clientRequest.split(":");
-                    //server.Publish(parts[1].trim());
-                } else if (clientRequest.startsWith("read:")){
-                    //server.Read();
+                    server.Publish(parts[1].trim());
+                } else if (clientRequest.startsWith("read")){
+                    System.out.println(server.Read());
                 } else if (clientRequest.startsWith("choose:")){
                     //server.Choose(clientPort);
                 } else if (clientRequest.startsWith("reply:")){

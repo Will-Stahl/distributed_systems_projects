@@ -37,6 +37,8 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         coordNum = 5;  // coordinator hard-chosen as highest number for now
         nextID = 1;
         contentTree = new ReferencedTree();
+        coordPort = 2004;
+        coordHost = "localhost";
         
         if (consistency.equals("sequential")) {
             cStrat = new SequentialStrategy();
@@ -52,8 +54,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
             cStrat = new SequentialStrategy();
         }
     }
-
-
 
     public boolean Join(String IP, int Port) throws RemoteException
     {
@@ -175,8 +175,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * this server should be the coordinator if this method is called on it
      * calls ServerPublish() using strategy object
      */
-    public boolean CoordinatorPost(String article, int replyTo)
-            throws RemoteException {
+    public boolean CoordinatorPost(String article, int replyTo) throws RemoteException {
         try {
             return cStrat.ServerPublish(article, replyTo, this);
         } catch (Exception e) {
@@ -246,7 +245,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         return serverNum;
     }
 
-    public int GetServerPort() /*throws RemoteException*/{  // TODO: should it throw?
+    public int GetServerPort() {
         return serverPort;
     }
 

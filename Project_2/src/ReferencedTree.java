@@ -34,7 +34,6 @@ public class ReferencedTree {
      * @param replyTo ID of article to reply to, highest level if 0
      */
     public boolean AddNode(int newID, String article, int replyTo) {
-        // TODO: use replyTo to index directList
         ReferencedNode replyToNode = directList.get(replyTo);
         if (replyToNode == null) {
             return false;
@@ -53,12 +52,11 @@ public class ReferencedTree {
      * returns preview of all articles with indentation and IDs
      */
     public String ReadTree() {
-        // TODO: recursively construct preview string like in the writeup
-        // do not include the root in the string
         String result = "";
         for (ReferencedNode child : root.children) {
             result += ReadChild(child, "");
         }
+        System.out.println(result);
         return result;
     }
 
@@ -66,11 +64,11 @@ public class ReferencedTree {
      * recursive helper for Read()
      */
     private String ReadChild(ReferencedNode parent, String indent) {
-        String result = "\n" + indent + parent.ID + " ";
+        String result = "\n" + indent + parent.ID + ".  " + parent.article;
         if (parent.article.length() > 16) {  // too long, cut to preview
             result += parent.article.substring(0, 12) + "...";
         }
-        for (ReferencedNode child : root.children) {
+        for (ReferencedNode child : parent.children) {
             result += ReadChild(child, indent + "  ");
         }
         return result;
