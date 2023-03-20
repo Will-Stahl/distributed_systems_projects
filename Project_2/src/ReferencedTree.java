@@ -1,3 +1,4 @@
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -5,8 +6,8 @@ import java.util.*;
  * an ancillary array uses these indices to reference each node directly
  * updates are quick and it can be iterated recursively or by order of creation
  */
-public class ReferencedTree {
-    private class ReferencedNode {
+public class ReferencedTree implements Serializable {
+    private class ReferencedNode implements Serializable {
         public int ID;
         public String article;
         public ArrayList<ReferencedNode> children;
@@ -76,7 +77,7 @@ public class ReferencedTree {
     }
 
     public String GetAtIndex(int idx) {
-        if (directList.size() == 1){
+        if (directList.size() == 1 || idx > directList.size()){
             return null;
         }
 

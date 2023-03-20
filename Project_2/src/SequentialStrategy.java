@@ -6,13 +6,6 @@ import java.net.InetAddress;
 import java.util.*;
 
 public class SequentialStrategy implements ConsistencyStrategy {
-
-    private List<String> serverHostNames;
-
-    public SequentialStrategy(){
-        this.serverHostNames = new ArrayList<>();
-    }
-
     /**
      * @param article contents of article to publish
      * @param replyTo article ID to reply to (0 if not a reply)
@@ -53,7 +46,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
             try {
                 //System.out.println(selfServer.GetServerHost() + " " + selfServer.GetServerPort());
                 registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
-                
+
                 // Fixed set of ports are mapped to specific server numbers
                 HashMap<Integer, Integer> portToServerMap = new HashMap<>();
                 portToServerMap.put(2000, 1);
@@ -92,7 +85,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
     public String ServerChoose(int articleID, ReferencedTree contentTree) {
         String result = contentTree.GetAtIndex(articleID);
         if (result == null) {
-            return "Article not found for ID: " + articleID;
+            return "[SERVER]: Article not found for ID: " + articleID;
         }
         return result;
     }

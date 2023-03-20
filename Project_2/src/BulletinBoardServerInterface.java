@@ -6,6 +6,7 @@ public interface BulletinBoardServerInterface extends Remote
 {
     public int GetServerPort() throws RemoteException;
     public String GetServerHost() throws RemoteException;
+    public ReferencedTree GetTree() throws RemoteException;
     public ArrayList<BulletinBoardServerInterface> GetServerList() throws RemoteException;
     public boolean Join(String IP, int Port) throws RemoteException;
     public boolean Leave(String IP, int Port) throws RemoteException;

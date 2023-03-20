@@ -45,13 +45,13 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         
         if (consistency.equals("sequential")) {
             cStrat = new SequentialStrategy();
+        } else if (consistency.equals("readyourwrites")) {
+            cStrat = new ReadYourWritesStrategy();
         }
         // else if (consistency.equals("quorum")) {
 
         // }
-        // else if (consistency.equals("readyourwrites")) {
-
-        // }
+        
         else {
             System.out.println("Invalid strategy entered, defaulting to sequential");
             cStrat = new SequentialStrategy();
@@ -299,7 +299,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
                                 "BulletinBoardServer_" + 5);
                     coord.AddToServerList(server);
                 } catch (Exception e){
-                    e.printStackTrace();
+                    //e.printStackTrace();
                     System.out.println("[SERVER]: Please start the coordinator server first.");
                     System.exit(0);
                 }

@@ -10,32 +10,36 @@ import java.net.InetAddress;
 public class ReadYourWritesStrategy implements ConsistencyStrategy {
     public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer) {
-        // TODO: Check if at least 2 servers are online
-    
-        // Only coordinator server can make updates locally
         try{
             // Contact coordinator
             Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
+            BulletinBoardServerInterface coord = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_" + selfServer.GetCoordNum());
 
-            // Check if the object calling ServerPublish is itself the coordinator
-            BulletinBoardServer server = selfServer;
-            if (selfServer.GetServerPort() != selfServer.GetCoordPort()){
-                server = (BulletinBoardServer) registry.lookup("BulletinBoardServer_" + selfServer.GetCoordNum());
-            }
+            // Get primary copy of article from coordinator
+            String primaryCopy = coord.GetTree().GetAtIndex(replyTo);
 
-            // Update data only on the central server
+            // Update copy on the server that called this function.
+            registry =  LocateRegistry.getRegistry(selfServer.GetServerHost(), selfServer.GetServerPort());
+            System.out.println(selfServer.GetServerNumber());
+            ServerToServerInterface peer = (ServerToServerInterface)
+                    registry.lookup("BulletinBoardServer_" + selfServer.GetServerNumber());
+
             int nextID = selfServer.GetCurrID();
-            if (!selfServer.GetTree().AddNode(nextID, article, replyTo)) {
-                return false;  // local update failed, do not update others
-            }
             
-            // TODO: Once primary server has made its updates, lazily update the read servers (will need a thread here to do that)
+            if (!peer.UpdateTree(nextID, article, replyTo)) {
+                return false;
+            }
+            selfServer.IncrementID();
+            
+            System.out.println(coord.GetServerList().size());
+            
+            // Update all other replicas and coordinate server (if necessary)
             return true;
         } catch (Exception e){
+            e.printStackTrace();
+            System.out.println("[SERVER]: ERROR!");
             return false;
-        }
-
-        
+        }  
     }
 
     /**
@@ -54,7 +58,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
     public String ServerChoose(int articleID, ReferencedTree contentTree) {
         String result = contentTree.GetAtIndex(articleID);
         if (result == null) {
-            return "Article not found for ID: " + articleID;
+            return "[SERVER]: Article not found for ID: " + articleID;
         }
         return result;
     }
