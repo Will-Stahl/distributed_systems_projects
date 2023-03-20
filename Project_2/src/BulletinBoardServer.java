@@ -18,7 +18,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     private int serverPort; 
     private int serverNum;
     private static ArrayList<ClientInfo> clients = new ArrayList<>();
-    private static ArrayList<String> articles = new ArrayList<>();
+    private ArrayList<BulletinBoardServerInterface> serverList;
     private final int MAX_CLIENTS = 5;
     private static int clientCount = 0;
 
@@ -29,6 +29,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     private int nextID;
     private ConsistencyStrategy cStrat;  // initialize to specifc strategy
     private ReferencedTree contentTree;  // article tree data structure
+    private String serverHost;
 
     public BulletinBoardServer(int serverPort, int serverNum,
         String consistency) throws RemoteException{
@@ -39,6 +40,8 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         contentTree = new ReferencedTree();
         coordPort = 2004;
         coordHost = "localhost";
+        serverHost = "localhost";
+        serverList = new ArrayList<>();
         
         if (consistency.equals("sequential")) {
             cStrat = new SequentialStrategy();
@@ -135,8 +138,8 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * if not, uses RMI to contact primary
     */
     public boolean Reply(String article, int replyTo) throws RemoteException {
-        return cStrat.ServerPublish(article, replyTo, this);
         // same as call to ServerPublish() in Publish(), but with replyTo
+        return cStrat.ServerPublish(article, replyTo, this);
     }
 
     /**
@@ -144,19 +147,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * for now, we delegate viewing details to client
     */
     public String Read() throws RemoteException {
-        // if (serverNum == coordNum) {  // if this server is the coordinator
         return cStrat.ServerRead(this);
-        // }
-
-        // else look up coordinator in registry, request it to publish
-        // try{
-        //     Registry registry = LocateRegistry.getRegistry(coordHost, coordPort);
-        //     ServerToServerInterface coordServer = (ServerToServerInterface)
-        //     registry.lookup("BulletinBoardServer_" + coordNum);
-        //     return coordServer.CoordinatorRead();
-        // } catch (Exception e){
-        //     return "ERROR Read(): could not get result from coordinator";
-        // }
     }
 
 
@@ -183,7 +174,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         } 
     }
 
-
     /**
      * from ServerToServerInterface
      * should be called by coordinator on non-coordinators
@@ -201,7 +191,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         }
     }
 
-
     /**
      * from ServerToServerInterface
      * should only be called on coordinator server object
@@ -211,7 +200,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     public String CoordinatorChoose(int articleID) throws RemoteException {
         return cStrat.ServerChoose(articleID, contentTree);
     }
-
 
     private static boolean CheckValidPort(int port){
         Set<Integer> ports = new HashSet<>();
@@ -249,6 +237,10 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         return serverPort;
     }
 
+    public String GetServerHost(){
+        return serverHost;
+    }
+
     public ReferencedTree GetTree() {
         return contentTree;  // allow strategies to manipulate tree
     }
@@ -257,10 +249,19 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         return nextID;
     }
 
+    public ArrayList<BulletinBoardServerInterface> GetServerList(){
+        return serverList;
+    }
+
+    public void AddToServerList(BulletinBoardServerInterface server){
+        serverList.add(server);
+    }
+
     public static void main(String[] args){
+        // TODO: Add server hostname as parameter
         // If no argument is specified, then print error message and exit
         if (args.length != 2){
-            System.out.println("\n[SERVER]: Usage: java BulletinBoardServer <port> <consistency>");
+            System.out.println("\n[SERVER]: Usage: java BulletinBoardServer <hostname> <port> <consistency>");
             System.out.println("[SERVER]: Exiting...");
             System.exit(0);
         }
@@ -288,8 +289,23 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
             Registry registry = LocateRegistry.createRegistry(port);
             registry.rebind("BulletinBoardServer_" + serverNum, server);
             System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);
+
+            // Connect to central server if this is a replica
+            if (serverNum != 5){
+                try{
+                    registry = LocateRegistry.getRegistry("localhost", 2004);
+                    ServerToServerInterface coord = (ServerToServerInterface)
+                                registry.lookup(
+                                "BulletinBoardServer_" + 5);
+                    coord.AddToServerList(server);
+                } catch (Exception e){
+                    e.printStackTrace();
+                    System.out.println("[SERVER]: Please start the coordinator server first.");
+                    System.exit(0);
+                }
+            }
         } catch(Exception e) {
-            // e.printStackTrace();  // DEBUG
+            e.printStackTrace();  // DEBUG
             System.out.println("\n[SERVER]: Error occurred while launching server. It's possible that the port specified is currently in use.");
             System.out.println("[SERVER]: Exiting...");
             System.exit(0);

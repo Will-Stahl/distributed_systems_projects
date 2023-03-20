@@ -130,15 +130,9 @@ public class BulletinBoardClient {
             return false;
         }
 
-        String replyID = replyParts[0].trim();
-        if (!replyID.startsWith("id")){
-            System.out.println("[CLIENT]: ID format must begin with \"ID\". Example: \"ID1\", \"ID2\" and so on.");
-            return false;
-        }
-
-        String articleNumber = replyID.substring(2, replyID.length());
+        String articleNumber = replyParts[0].trim();
         if (!articleNumber.matches("\\d+")){
-            System.out.println("[CLIENT]: Article ID has to have a number. Example: \"ID1\", \"ID2\" and so on.");
+            System.out.println("[CLIENT]: Article ID has to have a number. Example: \"Reply: 1;Hello\" and so on.");
             return false;
         }
 
@@ -147,7 +141,7 @@ public class BulletinBoardClient {
 
     private boolean ValidChooseRequest(String lowerCaseRequest) {
         if (!lowerCaseRequest.startsWith("choose:")){
-            System.out.println("[CLIENT]:  Colon missing. Please use \"Reply: <Article ID>;<Reply>\"");
+            System.out.println("[CLIENT]:  Colon missing. Please use \"Choose: <Article ID>\"");
             return false;
         }
 
@@ -157,15 +151,9 @@ public class BulletinBoardClient {
             return false;
         }
 
-        String articleID = parts[1].trim();
-        if (!articleID.startsWith("id")){
-            System.out.println("[CLIENT]: ID format must begin with \"ID\". Example: \"ID1\", \"ID2\" and so on.");
-            return false;
-        }
-
-        String articleNumber = articleID.substring(2, articleID.length());
+        String articleNumber = parts[1].trim();
         if (!articleNumber.matches("\\d+")){
-            System.out.println("[CLIENT]: Article ID has to have a number. Example: \"ID1\", \"ID2\" and so on.");
+            System.out.println("[CLIENT]: Article ID has to have a number. Example: \"Choose: 1\"");
             return false;
         }
 
@@ -211,18 +199,38 @@ public class BulletinBoardClient {
                     return;
                 }
 
-                // Just get the first server for now
-                BulletinBoardServerInterface server = joinedServers.get(0);
+                // Get a random active server
+                Random rand = new Random();
+                BulletinBoardServerInterface server = joinedServers.get(rand.nextInt(joinedServers.size()));
 
                 if (clientRequest.startsWith("post:")){
                     String[] parts = clientRequest.split(":");
-                    server.Publish(parts[1].trim());
+                    boolean articlePublished = server.Publish(parts[1].trim());
+                    /* 
+                    if (articlePublished){
+                        System.out.println("[CLIENT]: Article successfully published by server.");
+                    } else{
+                        System.out.println("[CLIENT]: Article was not published due to an error. Please try again.");
+                    }*/
                 } else if (clientRequest.startsWith("read")){
-                    System.out.println(server.Read());
+                    String readResult = server.Read();
+                    if (readResult.length() == 0) {
+                        System.out.println("[CLIENT]: No article has been posted yet by any client.");
+                    } else {
+                        System.out.println("[CLIENT]: Read operation was successful! Printing articles below:");
+                        System.out.println(readResult);
+                    }
                 } else if (clientRequest.startsWith("choose:")){
-                    //server.Choose(clientPort);
+                    String[] parts = clientRequest.split(":");
+                    String result = server.Choose(Integer.parseInt(parts[1].trim()));
+                    System.out.println(result);
                 } else if (clientRequest.startsWith("reply:")){
-                    //server.Reply(clientRequest, clientPort);
+                    String[] parts = clientRequest.split(":");
+                    String replyString = parts[1].trim();
+                    String[] replyParts = replyString.split(";");
+                    String articleID = replyParts[0].trim();
+                    String articleReply = replyParts[1].trim();
+                    server.Reply(articleReply, Integer.parseInt(articleID));
                 }
             } 
         } catch (RemoteException e){

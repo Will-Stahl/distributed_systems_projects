@@ -1,14 +1,14 @@
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.*;
 
 public interface BulletinBoardServerInterface extends Remote
 {
     public int GetServerPort() throws RemoteException;
+    public String GetServerHost() throws RemoteException;
+    public ArrayList<BulletinBoardServerInterface> GetServerList() throws RemoteException;
     public boolean Join(String IP, int Port) throws RemoteException;
     public boolean Leave(String IP, int Port) throws RemoteException;
-
-    // TODO?: add parameters to ensure that client has joined?
-    
     public boolean Publish(String article) throws RemoteException;
     public String Read() throws RemoteException;
     public String Choose(int articleID) throws RemoteException;

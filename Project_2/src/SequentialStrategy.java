@@ -3,8 +3,15 @@ import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.net.InetAddress;
+import java.util.*;
 
 public class SequentialStrategy implements ConsistencyStrategy {
+
+    private List<String> serverHostNames;
+
+    public SequentialStrategy(){
+        this.serverHostNames = new ArrayList<>();
+    }
 
     /**
      * @param article contents of article to publish
@@ -12,15 +19,11 @@ public class SequentialStrategy implements ConsistencyStrategy {
      * @param selfServer server object that called this function
      * returns false if underlying tree object returns false
      */
-    // TODO: refactor so that BulletinBoardServer doesn't have to check
-    //       whether it is the coordinator or not, this method should
-    //       do it and call the coordinator if needed
     public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer) {
         Registry registry;
         try {
-            registry = LocateRegistry.getRegistry(
-                    selfServer.GetCoordHost(), selfServer.GetCoordPort());
+            registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
         } catch (RemoteException e) {
             return false;
         }
@@ -33,6 +36,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
                             "BulletinBoardServer_" + selfServer.GetCoordNum());
                 return coord.CoordinatorPost(article, replyTo);
             } catch (Exception e) {
+                System.out.println("[SERVER]: Central Server is offline. Please try again once it's online.");
                 return false;
             }
         }
@@ -40,25 +44,34 @@ public class SequentialStrategy implements ConsistencyStrategy {
         // is the central server, update self
         int nextID = selfServer.GetCurrID();
         boolean result = true;
-        if (selfServer.GetTree().AddNode(nextID, article, replyTo)) {
+        if (!selfServer.GetTree().AddNode(nextID, article, replyTo)) {
             return false;  // local update failed, do not update others
         }
 
-        // RMI others to update
-        for (int i = 1; i <= 5; i++) {
-            if (i == selfServer.GetServerNumber()) {  // do not contact self
-                continue;
-            }
+        ArrayList<BulletinBoardServerInterface> serverList = selfServer.GetServerList();
+        for (BulletinBoardServerInterface replica : serverList){
             try {
+                //System.out.println(selfServer.GetServerHost() + " " + selfServer.GetServerPort());
+                registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
+                
+                // Fixed set of ports are mapped to specific server numbers
+                HashMap<Integer, Integer> portToServerMap = new HashMap<>();
+                portToServerMap.put(2000, 1);
+                portToServerMap.put(2001, 2);
+                portToServerMap.put(2002, 3);
+                portToServerMap.put(2003, 4);
+
                 ServerToServerInterface peer = (ServerToServerInterface)
-                    registry.lookup("BulletinBoardServer_" + i);
+                    registry.lookup("BulletinBoardServer_" + portToServerMap.get(replica.GetServerPort()));
                 if (!peer.UpdateTree(nextID, article, replyTo)) {
                     result = false;
                 }
             } catch (Exception e) {
+                System.out.println("[SERVER]: BulletinBoardServer_ is offline");
                 result = false;
             }
         }
+        
         selfServer.IncrementID();
         return result;
     }

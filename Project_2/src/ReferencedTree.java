@@ -66,6 +66,7 @@ public class ReferencedTree {
     private String ReadChild(ReferencedNode parent, String indent) {
         String result = "\n" + indent + parent.ID + ".  " + parent.article;
         if (parent.article.length() > 16) {  // too long, cut to preview
+            // TODO: Fix minor bug with article preview
             result += parent.article.substring(0, 12) + "...";
         }
         for (ReferencedNode child : parent.children) {
@@ -75,6 +76,10 @@ public class ReferencedTree {
     }
 
     public String GetAtIndex(int idx) {
+        if (directList.size() == 1){
+            return null;
+        }
+
         ReferencedNode node = directList.get(idx);
         if (node == null) {
             return null;
