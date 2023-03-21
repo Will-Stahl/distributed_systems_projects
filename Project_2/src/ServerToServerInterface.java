@@ -3,6 +3,7 @@ import java.rmi.RemoteException;
 
 public interface ServerToServerInterface extends Remote
 {
+    public void AddToServerList(BulletinBoardServerInterface server) throws RemoteException;
     public boolean UpdateTree(int ID, String article, int replyTo) throws RemoteException;
 
     /**
