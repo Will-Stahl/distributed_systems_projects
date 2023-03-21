@@ -1,12 +1,7 @@
-import java.rmi.RemoteException;
-import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.net.InetAddress;
+import java.util.*;
 
-
-// TODO: use blocking or nonblocking?
-// Nonblocking probably can't guarantee this consistency
 public class ReadYourWritesStrategy implements ConsistencyStrategy {
     public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer) {
@@ -15,28 +10,64 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
             Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
             BulletinBoardServerInterface coord = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_" + selfServer.GetCoordNum());
 
-            // Get primary copy of article from coordinator
-            String primaryCopy = coord.GetTree().GetAtIndex(replyTo);
+            // Check if selfServer is the coordinator
+            // This is for the case when the client sends its write request to the coordinator server itself
+            int nextID = coord.GetCurrID();
+            ArrayList<BulletinBoardServerInterface> serverList = coord.GetServerList();
+            if (selfServer.GetServerPort() == selfServer.GetCoordPort()){
+                if (!coord.UpdateTree(nextID, article, replyTo)) {
+                    return false;
+                }
+                for (BulletinBoardServerInterface replica : serverList){
+                    try {
+                        registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
+                        ServerToServerInterface peer = (ServerToServerInterface)
+                            registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
+                        if (!peer.UpdateTree(nextID, article, replyTo)) {
+                            return false;
+                        }
+                    } catch (Exception e) {
+                        System.out.println("[SERVER]: BulletinBoardServer_" + replica.GetServerNumber() +" is offline");
+                        return false;
+                    }
+                }
+            } else {
+                // Get primary copy of article from coordinator
+                selfServer.SetTree(coord.GetTree());
+                System.out.println(selfServer.GetTree());
+                
+                if (!selfServer.UpdateTree(nextID, article, replyTo)) {
+                    System.out.println("HERE!!!");
+                    return false;
+                }
 
-            // Update copy on the server that called this function.
-            registry =  LocateRegistry.getRegistry(selfServer.GetServerHost(), selfServer.GetServerPort());
-            System.out.println(selfServer.GetServerNumber());
-            ServerToServerInterface peer = (ServerToServerInterface)
-                    registry.lookup("BulletinBoardServer_" + selfServer.GetServerNumber());
+                // Send updated tree to every other server including the coordinator
+                coord.SetTree(selfServer.GetTree());
 
-            int nextID = selfServer.GetCurrID();
-            
-            if (!peer.UpdateTree(nextID, article, replyTo)) {
-                return false;
+                System.out.println(serverList.size());
+                for (BulletinBoardServerInterface replica : serverList){
+                    // Don't update the server that called this function since
+                    // it was already updated above.
+                    if (replica.GetServerNumber() == selfServer.GetServerNumber()) continue;
+
+                    try {
+                        registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
+                        ServerToServerInterface peer = (ServerToServerInterface)
+                            registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
+                        if (!peer.UpdateTree(nextID, article, replyTo)) {
+                            return false;
+                        }
+                    } catch (Exception e) {
+                        System.out.println("[SERVER]: BulletinBoardServer_" + replica.GetServerNumber() +" is offline");
+                        return false;
+                    }
+                }
             }
-            selfServer.IncrementID();
             
-            System.out.println(coord.GetServerList().size());
-            
-            // Update all other replicas and coordinate server (if necessary)
+            coord.IncrementID();
             return true;
         } catch (Exception e){
-            e.printStackTrace();
+            //e.printStackTrace();
             System.out.println("[SERVER]: ERROR!");
             return false;
         }  

@@ -6,8 +6,6 @@ import java.net.InetAddress;
 
 public interface ConsistencyStrategy
 {
-    // TODO: the implementations might not store data, so methods might be static
-    
     /**
      *
      */
