@@ -31,8 +31,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     private ReferencedTree contentTree;  // article tree data structure
     private String serverHost;
 
-    public BulletinBoardServer(int serverPort, int serverNum,
-        String consistency) throws RemoteException{
+    public BulletinBoardServer(int serverPort, int serverNum, String hostname, String consistency) throws RemoteException{
         this.serverPort = serverPort;
         this.serverNum = serverNum;
         coordNum = 5;  // coordinator hard-chosen as highest number for now
@@ -40,7 +39,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         contentTree = new ReferencedTree();
         coordPort = 2004;
         coordHost = "localhost";
-        serverHost = "localhost";
+        serverHost = hostname;
         serverList = new ArrayList<>();
         
         if (consistency.equals("sequential")) {
@@ -257,16 +256,19 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         serverList.add(server);
     }
 
+    public void SetTree(ReferencedTree tree){
+        contentTree = new ReferencedTree(tree);
+    }
+
     public static void main(String[] args){
-        // TODO: Add server hostname as parameter
         // If no argument is specified, then print error message and exit
-        if (args.length != 2){
+        if (args.length != 3){
             System.out.println("\n[SERVER]: Usage: java BulletinBoardServer <hostname> <port> <consistency>");
             System.out.println("[SERVER]: Exiting...");
             System.exit(0);
         }
 
-        int port = Integer.parseInt(args[0]);
+        int port = Integer.parseInt(args[1]);
 
         // If port is invalid, then print error message and exit.
         if (!CheckValidPort(port)){
@@ -285,7 +287,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
 
         try{
             int serverNum = portToServerMap.get(port);
-            BulletinBoardServerInterface server = new BulletinBoardServer(port, serverNum, args[1]);
+            BulletinBoardServerInterface server = new BulletinBoardServer(port, serverNum, args[0], args[2]);
             Registry registry = LocateRegistry.createRegistry(port);
             registry.rebind("BulletinBoardServer_" + serverNum, server);
             System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);
@@ -293,11 +295,15 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
             // Connect to central server if this is a replica
             if (serverNum != 5){
                 try{
+                    // TODO: Refactor this!!!
                     registry = LocateRegistry.getRegistry("localhost", 2004);
-                    ServerToServerInterface coord = (ServerToServerInterface)
-                                registry.lookup(
-                                "BulletinBoardServer_" + 5);
+                    ServerToServerInterface coord = (ServerToServerInterface) registry.lookup("BulletinBoardServer_" + 5);
                     coord.AddToServerList(server);
+
+                    // TODO: If central server crashes, then stop every other server
+                    // Update the content tree of a newly joined server if it joins later in the session.
+                    BulletinBoardServerInterface coordinator = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_" + 5);
+                    server.SetTree(coordinator.GetTree());
                 } catch (Exception e){
                     //e.printStackTrace();
                     System.out.println("[SERVER]: Please start the coordinator server first.");
@@ -305,7 +311,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
                 }
             }
         } catch(Exception e) {
-            e.printStackTrace();  // DEBUG
+            //e.printStackTrace();  // DEBUG
             System.out.println("\n[SERVER]: Error occurred while launching server. It's possible that the port specified is currently in use.");
             System.out.println("[SERVER]: Exiting...");
             System.exit(0);

@@ -27,6 +27,29 @@ public class ReferencedTree implements Serializable {
         directList.add(root);
     }
 
+    // Second constructor for initializing a copy of another tree
+    public ReferencedTree(ReferencedTree tree){
+        root = new ReferencedNode(tree.root.ID, tree.root.article);
+        root.children = new ArrayList<ReferencedNode>();
+        directList = new ArrayList<ReferencedNode>();
+        directList.add(root);
+
+        for (ReferencedNode child : tree.root.children){
+            createDeepCopy(root, child);
+        }
+    }
+
+    private void createDeepCopy(ReferencedNode parent, ReferencedNode child){
+        ReferencedNode node = new ReferencedNode(child.ID, child.article);
+        node.children = new ArrayList<ReferencedNode>();
+        parent.children.add(node);
+        directList.add(node);
+
+        for (ReferencedNode successor : child.children){
+            createDeepCopy(node, successor);
+        }
+    }
+
     /**
      * @param article new article to publish
      * returns false if replyTo doesn't exist
@@ -36,6 +59,9 @@ public class ReferencedTree implements Serializable {
      */
     public boolean AddNode(int newID, String article, int replyTo) {
         ReferencedNode replyToNode = directList.get(replyTo);
+        //System.out.println("ID: " + newID);
+        //System.out.println("Article:" + article);
+
         if (replyToNode == null) {
             return false;
         }
@@ -57,6 +83,7 @@ public class ReferencedTree implements Serializable {
         for (ReferencedNode child : root.children) {
             result += ReadChild(child, "");
         }
+        System.out.println(root.children.size());
         System.out.println(result);
         return result;
     }
