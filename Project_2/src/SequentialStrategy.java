@@ -36,6 +36,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
         int nextID = selfServer.GetCurrID();
         boolean result = true;
         if (!selfServer.GetTree().AddNode(nextID, article, replyTo)) {
+            System.out.println("[SERVER]: Unable to post article to bulletin board.");
             return false;  // local update failed, do not update others
         }
 
@@ -44,16 +45,8 @@ public class SequentialStrategy implements ConsistencyStrategy {
             try {
                 //System.out.println(selfServer.GetServerHost() + " " + selfServer.GetServerPort());
                 registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
-
-                // Fixed set of ports are mapped to specific server numbers
-                HashMap<Integer, Integer> portToServerMap = new HashMap<>();
-                portToServerMap.put(2000, 1);
-                portToServerMap.put(2001, 2);
-                portToServerMap.put(2002, 3);
-                portToServerMap.put(2003, 4);
-
                 ServerToServerInterface peer = (ServerToServerInterface)
-                    registry.lookup("BulletinBoardServer_" + portToServerMap.get(replica.GetServerPort()));
+                    registry.lookup("BulletinBoardServer_" + replica.GetServerPort());
                 if (!peer.UpdateTree(nextID, article, replyTo)) {
                     result = false;
                 }

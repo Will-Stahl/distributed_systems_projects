@@ -206,12 +206,11 @@ public class BulletinBoardClient {
                 if (clientRequest.startsWith("post:")){
                     String[] parts = clientRequest.split(":");
                     boolean articlePublished = server.Publish(parts[1].trim());
-                    /* 
                     if (articlePublished){
                         System.out.println("[CLIENT]: Article successfully published by server.");
                     } else{
                         System.out.println("[CLIENT]: Article was not published due to an error. Please try again.");
-                    }*/
+                    }
                 } else if (clientRequest.startsWith("read")){
                     String readResult = server.Read();
                     if (readResult.length() == 0) {
@@ -224,6 +223,7 @@ public class BulletinBoardClient {
                     String[] parts = clientRequest.split(":");
                     String result = server.Choose(Integer.parseInt(parts[1].trim()));
                     System.out.println(result);
+
                 } else if (clientRequest.startsWith("reply:")){
                     String[] parts = clientRequest.split(":");
                     String replyString = parts[1].trim();

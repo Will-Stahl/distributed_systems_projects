@@ -58,6 +58,10 @@ public class ReferencedTree implements Serializable {
      * @param replyTo ID of article to reply to, highest level if 0
      */
     public boolean AddNode(int newID, String article, int replyTo) {
+        if (replyTo >= directList.size()){
+            System.out.println("[SERVER]: The article being requested to reply to doesn't exist.");
+            return false;
+        }
         ReferencedNode replyToNode = directList.get(replyTo);
         //System.out.println("ID: " + newID);
         //System.out.println("Article:" + article);
@@ -92,11 +96,13 @@ public class ReferencedTree implements Serializable {
      * recursive helper for Read()
      */
     private String ReadChild(ReferencedNode parent, String indent) {
-        String result = "\n" + indent + parent.ID + ".  " + parent.article;
+        String result = indent + parent.ID + ".  ";
         if (parent.article.length() > 16) {  // too long, cut to preview
-            // TODO: Fix minor bug with article preview
-            result += parent.article.substring(0, 12) + "...";
+            result += parent.article.substring(0, 12) + "..." + "\n";
+        } else {
+            result += parent.article + "\n";
         }
+
         for (ReferencedNode child : parent.children) {
             result += ReadChild(child, indent + "  ");
         }
@@ -104,7 +110,7 @@ public class ReferencedTree implements Serializable {
     }
 
     public String GetAtIndex(int idx) {
-        if (directList.size() == 1 || idx > directList.size()){
+        if (directList.size() == 1 || idx >= directList.size()){
             return null;
         }
 

@@ -58,7 +58,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
                             return false;
                         }
                     } catch (Exception e) {
-                        System.out.println("[SERVER]: BulletinBoardServer_" + replica.GetServerNumber() +" is offline");
+                        System.out.println("[SERVER]: Server at port " + replica.GetServerPort() +" is offline");
                         return false;
                     }
                 }
@@ -67,8 +67,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
             coord.IncrementID();
             return true;
         } catch (Exception e){
-            //e.printStackTrace();
-            System.out.println("[SERVER]: ERROR!");
+            System.out.println("[SERVER]: Unable to post article. Please restart the server!");
             return false;
         }  
     }
