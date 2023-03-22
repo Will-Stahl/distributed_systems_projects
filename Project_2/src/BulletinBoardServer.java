@@ -1,17 +1,9 @@
-import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.net.MalformedURLException;
 import java.rmi.server.UnicastRemoteObject;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.io.IOException;
 import java.util.*;
 
-// TODO: simulate network delays, probably via wrapper/decorator class
-// TODO: save contentTree with java serialization
 public class BulletinBoardServer extends UnicastRemoteObject
 implements BulletinBoardServerInterface, ServerToServerInterface {
     
