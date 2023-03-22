@@ -14,6 +14,8 @@ import java.io.IOException;
 
 public class SequentialTest /*extends Thread*/ {
 
+    // TODO: can actually write tests now. Write tests.
+    // there are also a couple tasks left in BulletinBoardServer too
 
     // check stuff
     @Test
