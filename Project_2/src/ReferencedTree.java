@@ -63,8 +63,6 @@ public class ReferencedTree implements Serializable {
             return false;
         }
         ReferencedNode replyToNode = directList.get(replyTo);
-        //System.out.println("ID: " + newID);
-        //System.out.println("Article:" + article);
 
         if (replyToNode == null) {
             return false;

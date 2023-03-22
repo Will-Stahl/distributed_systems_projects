@@ -5,6 +5,9 @@ import java.util.*;
 public interface BulletinBoardServerInterface extends Remote
 {
     public int GetServerPort() throws RemoteException;
+    public void AddToServerList(BulletinBoardServerInterface server) throws RemoteException;
+    public boolean Ping() throws RemoteException;
+    public boolean PingCoordinator() throws RemoteException;
     public int GetCurrID() throws RemoteException;
     public void SetTree(ReferencedTree tree) throws RemoteException;
     public void IncrementID() throws RemoteException;

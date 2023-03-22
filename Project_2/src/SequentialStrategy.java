@@ -46,7 +46,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
                 //System.out.println(selfServer.GetServerHost() + " " + selfServer.GetServerPort());
                 registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
                 ServerToServerInterface peer = (ServerToServerInterface)
-                    registry.lookup("BulletinBoardServer_" + replica.GetServerPort());
+                    registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
                 if (!peer.UpdateTree(nextID, article, replyTo)) {
                     result = false;
                 }

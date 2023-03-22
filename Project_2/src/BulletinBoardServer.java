@@ -260,6 +260,32 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         contentTree = new ReferencedTree(tree);
     }
 
+    // function for pinging coordinator from other servers
+    public boolean PingCoordinator() throws RemoteException{
+        try{
+            Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), 2004);
+            BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
+                                                    registry.lookup("BulletinBoardServer_" + 5);
+            System.out.println("[SERVER]: Server pinged Coordinator. Coordinator is online");
+            return true;
+        } catch (Exception e){
+            return false;
+        }
+    }
+
+    // overloaded Ping(), where the FULL server name must be passed in
+    public boolean Ping() throws RemoteException {
+        try{
+            Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), this.GetServerPort());
+            BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
+                                                    registry.lookup("BulletinBoardServer_" + this.GetServerNumber());
+            System.out.println("[SERVER]: Client pinged server. Server is online.");
+            return true;
+        } catch (Exception e){
+            return false;
+        }
+    }
+
     public static void main(String[] args){
         // If no argument is specified, then print error message and exit
         if (args.length != 3){
@@ -290,26 +316,36 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
             BulletinBoardServerInterface server = new BulletinBoardServer(port, serverNum, args[0], args[2]);
             Registry registry = LocateRegistry.createRegistry(port);
             registry.rebind("BulletinBoardServer_" + serverNum, server);
-            System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);
 
             // Connect to central server if this is a replica
             if (serverNum != 5){
                 try{
-                    // TODO: Refactor this!!!
                     registry = LocateRegistry.getRegistry("localhost", 2004);
-                    ServerToServerInterface coord = (ServerToServerInterface) registry.lookup("BulletinBoardServer_" + 5);
-                    coord.AddToServerList(server);
-
-                    // TODO: If central server crashes, then stop every other server
                     // Update the content tree of a newly joined server if it joins later in the session.
                     BulletinBoardServerInterface coordinator = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_" + 5);
                     server.SetTree(coordinator.GetTree());
+                    coordinator.AddToServerList(server);
+
+                    // Ping coordinator server
+                    Timer timer = new Timer();
+                    TimerTask task = new TimerTask() {
+                        public void run(){
+                            try {
+                                coordinator.PingCoordinator();
+                            } catch (Exception e){
+                                System.out.println("[SERVER]: Coordinator is offline. Exiting...");
+                                System.exit(0);
+                            }
+                        }
+                    };
+                    timer.schedule(task, 0, 1000);
                 } catch (Exception e){
                     //e.printStackTrace();
                     System.out.println("[SERVER]: Please start the coordinator server first.");
                     System.exit(0);
                 }
             }
+            System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);
         } catch(Exception e) {
             //e.printStackTrace();  // DEBUG
             System.out.println("\n[SERVER]: Error occurred while launching server. It's possible that the port specified is currently in use.");
