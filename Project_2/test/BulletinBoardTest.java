@@ -52,27 +52,25 @@ public class BulletinBoardTest /*extends Thread*/ {
     //     Assert.assertFalse(Svr.Leave("127.0.0.1", 8000));  // Client info should be gone
     // }
 
+    private ArrayList<Process> procs;
+
     // check stuff
     @Test
     public void CheckSomething()
             throws RemoteException, NotBoundException, IOException {
-        // basic code to start server processes
-        ArrayList<Process> serverProcs = startServers("sequential");
         int[] serverToPortMap = generateMap();
         
         int serverNumber = 1;
         int serverPort = serverToPortMap[serverNumber];
-        System.out.println("C");
         Registry reg = LocateRegistry.getRegistry("localhost", serverPort);
-        System.out.println("B");
+        System.out.println("C: " + serverPort);  // DEBUG
+        System.out.println(reg.list().toString());  // DEBUG
         BulletinBoardServerInterface server = (BulletinBoardServerInterface)
                 reg.lookup("BulletinBoardServer_" + serverNumber);
         
-        System.out.println("A");
         Assert.assertTrue(server.Publish("testarticle"));
         System.out.println(server.Read());
 
-        killSevers(serverProcs);
     }
 
     private int[] generateMap() {
@@ -80,19 +78,4 @@ public class BulletinBoardTest /*extends Thread*/ {
         return new int[]{ -1,2000,2001,2002,2003,2004 }; 
     }
 
-    private ArrayList<Process> startServers(String consistency) throws IOException {
-        ArrayList<Process> procs = new ArrayList<Process>();
-        for (int i = 0; i < 5; i++) {
-            String port = Integer.toString(i + 2000);
-            procs.add(new ProcessBuilder("java",
-                    "../src/BulletinBoardServer", port, consistency).start());
-        }
-        return procs;
-    }
-
-    private void killSevers(ArrayList<Process> procs) {
-        for (int i = 0; i < 5; i++) {
-            procs.get(i).destroy();
-        }
-    }
 }
