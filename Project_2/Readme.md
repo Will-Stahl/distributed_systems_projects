@@ -6,14 +6,16 @@ Compile server using the command:
 `javac BulletinBoardServer.java`
 
 Run server using the command: 
-`java BulletinBoardServer 2000 <consistency name>`
+`java BulletinBoardServer <hostname> 2000 <consistency name>`
+Example: `java BulletinBoardServer localhost 2000 readyourwrites`
 
 ## Running clients
 Compile client using the command: 
 `javac BulletinBoardClient.java`
 
 Run client using the command: 
-`java BulletinBoardClient localhost`
+`java BulletinBoardClient <hostname>`
+Example: `java BulletinBoardClient localhost`
 
 When prompted to enter a command, type "join: 2000" for example to join a server running on port 2000. 
 
