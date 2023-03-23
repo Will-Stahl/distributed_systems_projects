@@ -14,12 +14,16 @@ import java.io.IOException;
 
 public class SequentialTest /*extends Thread*/ {
 
-    // TODO: can actually write tests now. Write tests.
-    // there are also a couple tasks left in BulletinBoardServer too
+    /**
+     * IMPORTANT: each successive test is NOT on a fresh system.
+     * Each test updates the system and assumes the previous test
+     * updated it successfully
+     */
 
-    // check stuff
+    // checks that interacting with server on fresh system works as expected
+    // tests assumed to run in order
     @Test
-    public void CheckSomething()
+    public void SingleServerInteraction()
             throws RemoteException, NotBoundException, IOException {
         int[] serverToPortMap = generateMap();
         
@@ -29,9 +33,50 @@ public class SequentialTest /*extends Thread*/ {
         BulletinBoardServerInterface server = (BulletinBoardServerInterface)
                 reg.lookup("BulletinBoardServer_" + serverNumber);
         
-        Assert.assertTrue(server.Publish("testarticle"));
-        System.out.println(server.Read());
+        // article doesn't exist
+        Assert.assertEquals("", server.Read());
+        Assert.assertFalse(server.Reply("test;article", 1));
+        Assert.assertEquals(server.Choose(1), "[SERVER]: Article not found for ID: 1");
+        // now make the article exist
+        Assert.assertTrue(server.Publish("test;article"));
+        Assert.assertTrue(server.Reply("test;article", 1));
+        String cmp = "\n1.  test;article\n  2.  test;article";
+        Assert.assertEquals(server.Read(), cmp);
+        Assert.assertEquals(server.Choose(1), "test;article");
 
+    }
+
+    // check for expected consistency behaviour across multiple servers
+    @Test
+    public void ChangeServer()
+            throws RemoteException, NotBoundException, IOException {
+        int[] serverToPortMap = generateMap();
+        
+        int serverNumber = 5;  // connect to coordinator
+        int serverPort = serverToPortMap[serverNumber];
+        Registry reg = LocateRegistry.getRegistry("localhost", serverPort);
+        BulletinBoardServerInterface server = (BulletinBoardServerInterface)
+                reg.lookup("BulletinBoardServer_" + serverNumber);
+
+        server.Publish("test2;article");  // ID 3
+        server.Publish("test2;article2");  // ID 4
+
+        serverNumber = 4;
+        serverPort = serverToPortMap[serverNumber];
+        reg = LocateRegistry.getRegistry("localhost", serverPort);
+        server = (BulletinBoardServerInterface)
+                reg.lookup("BulletinBoardServer_" + serverNumber);  // connect to 4
+        Assert.assertEquals("test2;article", server.Choose(3));  // global order
+        Assert.assertEquals("test2;article2", server.Choose(4));  // same order as posted
+
+        
+        serverNumber = 3;  // another server, see global order
+        serverPort = serverToPortMap[serverNumber];
+        reg = LocateRegistry.getRegistry("localhost", serverPort);
+        server = (BulletinBoardServerInterface)
+                reg.lookup("BulletinBoardServer_" + serverNumber);  // connect to 3
+        Assert.assertEquals("test2;article", server.Choose(3));  // global order
+        Assert.assertEquals("test2;article2", server.Choose(4));  // same order as posted
     }
 
     private int[] generateMap() {

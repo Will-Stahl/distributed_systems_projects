@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.util.*;
 
 // TODO: simulate network delays, probably via wrapper/decorator class
-// TODO: save contentTree with java serialization
 public class BulletinBoardServer extends UnicastRemoteObject
 implements BulletinBoardServerInterface, ServerToServerInterface {
     
@@ -138,6 +137,9 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     */
     public boolean Reply(String article, int replyTo) throws RemoteException {
         // same as call to ServerPublish() in Publish(), but with replyTo
+        if (replyTo < 1) {
+            return false;
+        }
         return cStrat.ServerPublish(article, replyTo, this);
     }
 
@@ -154,6 +156,9 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * @param articleID ID of article requested in full
     */
     public String Choose(int articleID) throws RemoteException {
+        if (articleID < 1) {
+            return "[SERVER] Article ID must be a positive integer.";
+        }
         return cStrat.ServerChoose(articleID, contentTree);
     }
 
