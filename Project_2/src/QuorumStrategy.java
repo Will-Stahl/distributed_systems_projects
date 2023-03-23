@@ -51,7 +51,6 @@ public class QuorumStrategy implements ConsistencyStrategy {
             coord.IncrementID();
             return true;
         } catch (Exception e){
-            e.printStackTrace();
             System.out.println("[SERVER]: One of the servers in the write quorum is offline. Please restart it.");
             return false;
         }
