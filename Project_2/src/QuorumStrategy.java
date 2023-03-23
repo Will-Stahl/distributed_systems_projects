@@ -6,124 +6,158 @@ import java.util.*;
 public class QuorumStrategy implements ConsistencyStrategy {
     private static int NR = 3;
     private static int NW = 3;
-    private static ArrayList<BulletinBoardServer> readQuorum = new ArrayList<>();
-    private static ArrayList<BulletinBoardServer> writeQuorum = new ArrayList<>();
-
-    // Keep track of server that is both in the read and write quorum
-    private static ServerToServerInterface overlappedServer;
-
-    // TODO: Complete this function
-    private static void CreateRandomReadWriteQuorums(){
-
-    }
 
     public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer) {
-        try{
-            // Contact coordinator
+        try{    
+            // Contact coordinator to initiate quorum
             Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
+            BulletinBoardServerInterface coord = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_" + selfServer.GetCoordNum());
+            
+            // Initialize random servers to read and write quorums
+            coord.SetQuorums(NR, NW);
 
-            // Check if the object calling ServerPublish is itself the coordinator
-            BulletinBoardServer server = selfServer;
-            if (selfServer.GetServerPort() != selfServer.GetCoordPort()){
-                server = (BulletinBoardServer) registry.lookup("BulletinBoardServer_" + selfServer.GetCoordNum());
-            }
-            // Initialize write quorum if it has never been initialized before
-            if (writeQuorum.size() == 0){
-                CreateRandomReadWriteQuorums();
-            }
+            // Get current server list
+            ArrayList<BulletinBoardServerInterface> serverList = coord.GetServerList();
 
-            // Perform write operation to writeQuorum servers and track successful writes
-            ArrayList<ServerToServerInterface> updatedServers = new ArrayList<>();
-
-            // Get article ID
-            int nextID = server.GetCurrID();
-
-            // RMI write quorum servers to update
-            for (int i = 1; i <= writeQuorum.size(); i++){
-                try {
-                    ServerToServerInterface peer = writeQuorum.get(i);
-                    if (!peer.UpdateTree(nextID, article, replyTo)) {
-                        // Unable to update tree, so move onto next server
-                        continue;
-                    }
-                    updatedServers.add(peer);
-                } catch (Exception e) {
-                    // Unable to update tree, so move onto next server
-                    continue;
-                }
-            }
-
-            // Check if any server writes were unsuccesful. 
-            // If server write was unsuccesful, then undo changes to the updated servers
-            if (updatedServers.size() != writeQuorum.size()){
-                System.out.println("[SERVER]: Write operation was unsuccesful. Undoing changes to updated servers...");
-                // TODO: Undo write changes to servers that were updated
+            if (serverList.size() != NR + NW - 1) {
+                System.out.println("[SERVER]: Please ensure all 5 servers are running!");
                 return false;
             }
 
+            // Update all writeQuorum servers
+            List<BulletinBoardServerInterface> writeQuorum = coord.GetWriteQuorum();
+            int numberOfSuccessfulWrites = 0;
+            int nextID = coord.GetCurrID();
+            for (BulletinBoardServerInterface writeServer : writeQuorum){
+                registry =  LocateRegistry.getRegistry(writeServer.GetServerHost(), writeServer.GetServerPort());
+                ServerToServerInterface peer = (ServerToServerInterface)
+                    registry.lookup("BulletinBoardServer_" + writeServer.GetServerNumber());
+                if (peer.UpdateTree(nextID, article, replyTo)) {
+                    numberOfSuccessfulWrites += 1;
+                }
+            }
+
+            if (numberOfSuccessfulWrites != NW) {
+                System.out.println("[SERVER]: Article not posted! Majority of servers did not agree on the write.");
+                return false;
+            }
+            
+            System.out.println("[SERVER]: Write quorum has agreed to post the article.");
+
+            Sync(nextID, article, replyTo, coord);
+
             // Generate new ID for future articles
-            selfServer.IncrementID();
+            coord.IncrementID();
             return true;
         } catch (Exception e){
+            e.printStackTrace();
+            System.out.println("[SERVER]: One of the servers in the write quorum is offline. Please restart it.");
             return false;
         }
     }
 
     // Lazily update all read quorum servers
-    // TODO: Write code for calling this function periodically
-    public boolean UpdateAllReadServers(int nextID, String article, int replyTo){
-        // TODO: This needs more updates to use the overlappedServers variable
-        try{
-            for (int i = 0; i < readQuorum.size(); i++){
+    public void Sync(int nextID, String article, int replyTo, BulletinBoardServerInterface coord){
+        try {
+            List<BulletinBoardServerInterface> readQuorum = coord.GetReadQuorum();
+            BulletinBoardServerInterface overlappedServer = readQuorum.get(0);
+
+            for (BulletinBoardServerInterface replica : readQuorum){
                 try {
-                    ServerToServerInterface peer = readQuorum.get(i);
-                    if (!peer.UpdateTree(nextID, article, replyTo)) {
-                        // Unable to update tree, so move onto next server
+                    // Don't update the overlapped server since it already contains the latest updates.
+                    if (replica.GetServerNumber() == overlappedServer.GetServerNumber()){
                         continue;
+                    } else {
+                        // Update replica with the latest writes from the write quorum
+                        replica.SetTree(overlappedServer.GetTree());
                     }
                 } catch (Exception e) {
-                    // Unable to update tree, so move onto next server
+                    // The server can be updated at a later time as this function is called periodically in the background.
+                    System.out.println("[SERVER]: Error occurred while updating server. Please restart the server!");
                     continue;
                 }
             }
-            return true;
         } catch (Exception e){
-            return false;
+            e.printStackTrace();
+            System.out.println("[SERVER]: Make sure coordinator is online!");
         }
     }
 
-    // TODO: Probably needs refactoring
     public String ServerRead(BulletinBoardServer selfServer) {
-        // If read and write quorums have not been created earlier, then create them right now
-        if (readQuorum.size() == 0){
-            CreateRandomReadWriteQuorums();
-        }
+        try {
+            // Contact coordinator to initiate quorum
+            Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
+            BulletinBoardServerInterface coord = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_5");
 
-        ArrayList<String> readResults = new ArrayList<>();
-        try{
-            for (int i = 0; i < readQuorum.size(); i++){
+            List<BulletinBoardServerInterface> readQuorum = coord.GetReadQuorum();
+            List<BulletinBoardServerInterface> writeQuorum = coord.GetWriteQuorum();
+
+            // Cant establish a read quorum if a write quorum already doesn't exist
+            if (writeQuorum.size() == 0){
+                System.out.println("HERE!!!");
+                return "";
+            }
+
+            int numSuccessfulReads = 0;
+            Set<String> responses = new HashSet<>();
+            String response = "";
+            for (BulletinBoardServerInterface replica : readQuorum){
                 try {
-                    BulletinBoardServer server = readQuorum.get(i);
-                    readResults.add(server.GetTree().ReadTree());
+                    response = replica.GetTree().ReadTree();
+                    responses.add(response);
+                    System.out.println("RESPONSE: " + response);
+                    numSuccessfulReads += 1;
                 } catch (Exception e) {
-                    // Unable to update tree, so move onto next server
+                    System.out.println("[SERVER]: Server is offline. Please restart it.");
+                }
+            }
+            System.out.println("Read size: " + readQuorum.size() + " NR: " + NR + " Succes: " + numSuccessfulReads);
+            if (numSuccessfulReads == NR && responses.size() == 1) {
+                System.out.println("[SERVER]: Read Quorum agreed on the same read value.");
+                return response;
+            }
+
+            System.out.println("[SERVER]: Read Quorum did not agree on the same read value.");
+        } catch (Exception e) {
+            System.out.println("[SERVER]: Make sure coordinator is online!");
+        }
+        return "";
+    }
+
+    public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree) {
+        /* 
+        try {
+            
+            // Contact coordinator to initiate quorum
+            Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
+            BulletinBoardServerInterface coord = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_5");
+
+            List<BulletinBoardServerInterface> readQuorum = coord.GetReadQuorum();
+            BulletinBoardServerInterface overlappedServer = readQuorum.get(0);
+
+            for (BulletinBoardServerInterface replica : readQuorum){
+                try {
+                    // Don't update the overlapped server since it already contains the latest updates.
+                    if (replica.GetServerNumber() == overlappedServer.GetServerNumber()){
+                        continue;
+                    } else {
+                        // Update replica with the latest writes from the write quorum
+                        replica.SetTree(overlappedServer.GetTree());
+                    }
+                } catch (Exception e) {
+                    // The server can be updated at a later time as this function is called periodically in the background.
+                    System.out.println("[SERVER]: Error occurred while updating server. Please restart the server!");
                     continue;
                 }
             }
-            if (readResults.size() == readQuorum.size()){
-                System.out.println("[SERVER]: Read Operation was successful! Printing results now...");
-                return String.join(",", readResults);
-            }
-            return "";
         } catch (Exception e){
-            return "";
+            e.printStackTrace();
+            System.out.println("[SERVER]: Make sure coordinator is online!");
         }
-    }
-
-    public String ServerChoose(int articleID, ReferencedTree contentTree) {
-        Random rand = new Random();
-        return readQuorum.get(rand.nextInt(readQuorum.size())).GetTree().GetAtIndex(articleID);
+        Random rand = new Random();*/
+        return "";
+        //return readQuorum.get(rand.nextInt(readQuorum.size())).GetTree().GetAtIndex(articleID);
     }
 
 }

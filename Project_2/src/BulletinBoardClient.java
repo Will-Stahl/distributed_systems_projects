@@ -262,8 +262,9 @@ public class BulletinBoardClient {
 
         // Show only 5 IDs at a time
         System.out.println("\nArticle List");
-        System.out.println("\n" + String.join("\n",Arrays.copyOfRange(articles, 0, 5)));
-        if (articles.length > 5){
+        if (articles.length <= 5){
+            System.out.println("\n" + String.join("\n",Arrays.copyOfRange(articles, 0, articles.length)));
+        } else {
             Scanner sc = new Scanner(System.in);
             int startIdx = 5;
             while (true){

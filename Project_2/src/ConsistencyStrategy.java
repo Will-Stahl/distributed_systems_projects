@@ -11,5 +11,5 @@ public interface ConsistencyStrategy
      * whether it contacts other servers (quorum) or just uses its local copy
      */
     public String ServerRead(BulletinBoardServer selfServer);
-    public String ServerChoose(int articleID, ReferencedTree contentTree);
+    public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree);
 }

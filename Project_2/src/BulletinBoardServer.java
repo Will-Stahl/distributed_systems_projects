@@ -1,3 +1,4 @@
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -13,6 +14,8 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     private ArrayList<BulletinBoardServerInterface> serverList;
     private final int MAX_CLIENTS = 5;
     private static int clientCount = 0;
+    private List<BulletinBoardServerInterface> readQuorum;
+    private List<BulletinBoardServerInterface> writeQuorum;
 
     // P2P data structures
     private int coordNum;
@@ -33,15 +36,16 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         coordHost = "localhost";
         serverHost = hostname;
         serverList = new ArrayList<>();
+        readQuorum = new ArrayList<>();
+        writeQuorum = new ArrayList<>();
         
         if (consistency.equals("sequential")) {
             cStrat = new SequentialStrategy();
         } else if (consistency.equals("readyourwrites")) {
             cStrat = new ReadYourWritesStrategy();
+        } else if (consistency.equals("quorum")) {
+            cStrat = new QuorumStrategy();
         }
-        // else if (consistency.equals("quorum")) {
-
-        // }
         
         else {
             System.out.println("Invalid strategy entered, defaulting to sequential");
@@ -146,7 +150,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * @param articleID ID of article requested in full
     */
     public String Choose(int articleID) throws RemoteException {
-        return cStrat.ServerChoose(articleID, contentTree);
+        return cStrat.ServerChoose(this, articleID, contentTree);
     }
 
 
@@ -189,7 +193,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * returns message if article isn't found
      */
     public String CoordinatorChoose(int articleID) throws RemoteException {
-        return cStrat.ServerChoose(articleID, contentTree);
+        return cStrat.ServerChoose(this, articleID, contentTree);
     }
 
     private static boolean CheckValidPort(int port){
@@ -252,13 +256,42 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         contentTree = new ReferencedTree(tree);
     }
 
+    public List<BulletinBoardServerInterface> GetWriteQuorum(){
+        return writeQuorum;
+    }
+
+    public List<BulletinBoardServerInterface> GetReadQuorum(){
+        return readQuorum;
+    }
+
+    public void SetQuorums(int NR, int NW){
+        // Add coordinator to server list so that have have Nr + Nw - 1 servers
+        if (!serverList.contains(this)){
+            this.serverList.add(this);
+        }
+        Collections.shuffle(this.serverList);
+
+        this.writeQuorum = new ArrayList<>();
+        this.readQuorum = new ArrayList<>();
+
+        // Add to write quorum after shuffling server list
+        for (int i = 0; i < NW; i++){
+            this.writeQuorum.add(serverList.get(i));
+        }
+
+        // Add to read quorum after shuffling server list
+        for (int i = NW-1; i < NR + NW - 1; i++){
+            this.readQuorum.add(serverList.get(i));
+        }
+    }
+
     // function for pinging coordinator from other servers
     public boolean PingCoordinator() throws RemoteException{
         try{
             Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), 2004);
             BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
                                                     registry.lookup("BulletinBoardServer_" + 5);
-            System.out.println("[SERVER]: Server pinged Coordinator. Coordinator is online");
+            //System.out.println("[SERVER]: Server pinged Coordinator. Coordinator is online");
             return true;
         } catch (Exception e){
             return false;

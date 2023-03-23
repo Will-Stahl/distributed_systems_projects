@@ -85,8 +85,6 @@ public class ReferencedTree implements Serializable {
         for (ReferencedNode child : root.children) {
             result += ReadChild(child, "");
         }
-        System.out.println(root.children.size());
-        System.out.println(result);
         return result;
     }
 

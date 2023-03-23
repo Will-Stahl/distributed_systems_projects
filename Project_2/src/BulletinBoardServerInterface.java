@@ -6,6 +6,9 @@ public interface BulletinBoardServerInterface extends Remote
 {
     public int GetServerPort() throws RemoteException;
     public void AddToServerList(BulletinBoardServerInterface server) throws RemoteException;
+    public List<BulletinBoardServerInterface> GetWriteQuorum() throws RemoteException;
+    public List<BulletinBoardServerInterface> GetReadQuorum() throws RemoteException;
+    public void SetQuorums(int NR, int NW) throws RemoteException;
     public boolean Ping() throws RemoteException;
     public boolean PingCoordinator() throws RemoteException;
     public int GetCurrID() throws RemoteException;

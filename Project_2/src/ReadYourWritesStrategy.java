@@ -50,15 +50,11 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
                     // it was already updated above.
                     if (replica.GetServerNumber() == selfServer.GetServerNumber()) continue;
 
-                    try {
-                        registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
-                        ServerToServerInterface peer = (ServerToServerInterface)
-                            registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
-                        if (!peer.UpdateTree(nextID, article, replyTo)) {
-                            return false;
-                        }
-                    } catch (Exception e) {
-                        System.out.println("[SERVER]: Server at port " + replica.GetServerPort() +" is offline");
+                    // Update all other replicas.
+                    registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
+                    ServerToServerInterface peer = (ServerToServerInterface)
+                        registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
+                    if (!peer.UpdateTree(nextID, article, replyTo)) {
                         return false;
                     }
                 }
@@ -85,7 +81,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
      * @param contentTree article tree from server object that called this
      * sequential consistency, just read from local
      */
-    public String ServerChoose(int articleID, ReferencedTree contentTree) {
+    public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree) {
         String result = contentTree.GetAtIndex(articleID);
         if (result == null) {
             return "[SERVER]: Article not found for ID: " + articleID;
