@@ -253,7 +253,6 @@ public class BulletinBoardClient {
         while (i < articleIndices.size()){
             if (i + 1 >= articleIndices.size()){
                 articles[i] = String.join("\n", Arrays.copyOfRange(lines, articleIndices.get(i), lines.length));
-                
                 break;
             }
             articles[i] = String.join("\n", Arrays.copyOfRange(lines, articleIndices.get(i), articleIndices.get(i+1)));
@@ -261,10 +260,14 @@ public class BulletinBoardClient {
         }
 
         // Show only 5 IDs at a time
-        System.out.println("\nArticle List");
-        if (articles.length <= 5){
+        System.out.println("\nArticle List: ");
+        if (articles.length < 5){
             System.out.println("\n" + String.join("\n",Arrays.copyOfRange(articles, 0, articles.length)));
         } else {
+            System.out.println("\n" + String.join("\n",Arrays.copyOfRange(articles, 0, 5)));
+        }
+        
+        if (articles.length > 5) {
             Scanner sc = new Scanner(System.in);
             int startIdx = 5;
             while (true){
