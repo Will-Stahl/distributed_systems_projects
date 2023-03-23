@@ -37,7 +37,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
             int nextID = selfServer.GetCurrID();
             boolean result = true;
             if (!selfServer.GetTree().AddNode(nextID, article, replyTo)) {
-                System.out.println("[SERVER]: Unable to post article to bulletin board.");
+                System.out.println("[SERVER]: Unable to post article/reply to bulletin board.");
                 return false;  // local update failed, do not update others
             }
     
@@ -54,7 +54,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
             selfServer.IncrementID();
             return result;
         } catch (Exception e){
-            System.out.println("[SERVER]: Unable to post article. Please restart the server!");
+            System.out.println("[SERVER]: Unable to post article/reply. Please restart the server!");
             return false;
         }
     }
@@ -73,11 +73,14 @@ public class SequentialStrategy implements ConsistencyStrategy {
      * sequential consistency, just read from local
      */
     public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree) {
-        String result = contentTree.GetAtIndex(articleID);
-        if (result == null) {
-            return "[SERVER]: Article not found for ID: " + articleID;
+        HashMap<Integer, String> articleMap = contentTree.ParseTree(contentTree.ReadTree());
+
+        // If invalid key, then return error message.
+        if (!articleMap.containsKey(articleID)){
+            return "[CLIENT]: Article not found for ID: " + articleID;
         }
-        return result;
+
+        return articleMap.get(articleID);
     }
 
 }

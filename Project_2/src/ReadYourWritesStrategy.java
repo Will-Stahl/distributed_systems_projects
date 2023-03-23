@@ -19,15 +19,10 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
                     return false;
                 }
                 for (BulletinBoardServerInterface replica : serverList){
-                    try {
-                        registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
-                        ServerToServerInterface peer = (ServerToServerInterface)
-                            registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
-                        if (!peer.UpdateTree(nextID, article, replyTo)) {
-                            return false;
-                        }
-                    } catch (Exception e) {
-                        System.out.println("[SERVER]: BulletinBoardServer_" + replica.GetServerNumber() +" is offline");
+                    registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
+                    ServerToServerInterface peer = (ServerToServerInterface)
+                        registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
+                    if (!peer.UpdateTree(nextID, article, replyTo)) {
                         return false;
                     }
                 }
@@ -37,7 +32,6 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
                 System.out.println(selfServer.GetTree());
                 
                 if (!selfServer.UpdateTree(nextID, article, replyTo)) {
-                    System.out.println("HERE!!!");
                     return false;
                 }
 
@@ -63,7 +57,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
             coord.IncrementID();
             return true;
         } catch (Exception e){
-            System.out.println("[SERVER]: Unable to post article. Please restart the server!");
+            System.out.println("[SERVER]: Unable to post article/reply. Please restart the server!");
             return false;
         }  
     }
@@ -82,11 +76,14 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
      * sequential consistency, just read from local
      */
     public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree) {
-        String result = contentTree.GetAtIndex(articleID);
-        if (result == null) {
-            return "[SERVER]: Article not found for ID: " + articleID;
+        HashMap<Integer, String> articleMap = contentTree.ParseTree(contentTree.ReadTree());
+
+        // If invalid key, then return error message.
+        if (!articleMap.containsKey(articleID)){
+            return "[CLIENT]: Article not found for ID: " + articleID;
         }
-        return result;
+
+        return articleMap.get(articleID);
     }
 
 }
