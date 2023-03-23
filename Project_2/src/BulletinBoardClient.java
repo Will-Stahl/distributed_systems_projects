@@ -248,54 +248,38 @@ public class BulletinBoardClient {
 
     private static void HandleResultView(String readResult){
         String[] lines = readResult.split("\n");
-        
-        ArrayList<Integer> articleIndices = new ArrayList<>();
-        for (int i = 0; i < lines.length; i++){
-            if (lines[i].substring(1,2).equals(".")){
-                articleIndices.add(i);
-            }
-        }
-
-        String[] articles = new String[articleIndices.size()];
-        int i = 0;
-        while (i < articleIndices.size()){
-            if (i + 1 >= articleIndices.size()){
-                articles[i] = String.join("\n", Arrays.copyOfRange(lines, articleIndices.get(i), lines.length));
-                break;
-            }
-            articles[i] = String.join("\n", Arrays.copyOfRange(lines, articleIndices.get(i), articleIndices.get(i+1)));
-            i += 1;
-        }
 
         // Show only 5 IDs at a time
         System.out.println("\n[CLIENT]: Article List: ");
-        if (articles.length < 5){
-            System.out.println("\n" + String.join("\n",Arrays.copyOfRange(articles, 0, articles.length)));
+        if (lines.length < 5){
+            System.out.println("\n" + String.join("\n",Arrays.copyOfRange(lines, 0, lines.length)));
+            return;
         } else {
-            System.out.println("\n" + String.join("\n",Arrays.copyOfRange(articles, 0, 5)));
-        }
-
-        if (articles.length > 5) {
-            Scanner sc = new Scanner(System.in);
-            int startIdx = 5;
-            while (true){
-                System.out.println("\n[CLIENT] Type \"next\" to go to the next page of results or \"exit\" to exit article viewing: ");
-                String clientRequest = sc.nextLine();
-                if (clientRequest.equalsIgnoreCase("next")) {
-                    System.out.println("\nContinued:");
-                    if (startIdx + 5 > articles.length) {
-                        System.out.println(String.join("\n", Arrays.copyOfRange(articles, startIdx, articles.length)));
-                        break;
-                    } else {
-                        System.out.println(String.join("\n", Arrays.copyOfRange(articles, startIdx, startIdx+5)));
-                        startIdx += 5;
+            System.out.println("\n" + String.join("\n",Arrays.copyOfRange(lines, 0, 5)));
+            if (lines.length > 5) {
+                Scanner sc = new Scanner(System.in);
+                int startIdx = 5;
+                while (true){
+                    System.out.println("\n[CLIENT] Type \"next\" to go to the next page of results or \"exit\" to exit article viewing: ");
+                    String clientRequest = sc.nextLine();
+                    if (clientRequest.equalsIgnoreCase("next")) {
+                        System.out.println("\nContinued:");
+                        if (startIdx + 5 > lines.length) {
+                            System.out.println(String.join("\n", Arrays.copyOfRange(lines, startIdx, lines.length)));
+                            break;
+                        } else {
+                            System.out.println(String.join("\n", Arrays.copyOfRange(lines, startIdx, startIdx+5)));
+                            startIdx += 5;
+                        }
+                    } else if (clientRequest.equalsIgnoreCase("exit")) {
+                        System.out.println("\n[CLIENT]: Exiting article viewing...");
+                        return;
                     }
-                } else if (clientRequest.equalsIgnoreCase("exit")) {
-                    System.out.println("\n[CLIENT]: Exiting article viewing...");
-                    return;
-                }
-            }  
-        } 
+                }  
+            }
+        }
+        
+         
     }
 
     private static void HandleJoinOrLeaveRequests(String hostName, String IP, int clientPort, String clientRequest) throws RemoteException{

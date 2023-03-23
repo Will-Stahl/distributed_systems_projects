@@ -140,19 +140,14 @@ public class QuorumStrategy implements ConsistencyStrategy {
 
             for (BulletinBoardServerInterface replica : readQuorum){
                 try {
-                    String readResult = replica.GetTree().ReadTree();
-                    HashMap<Integer, String> articleMap = replica.GetTree().ParseTree(readResult);
-
-                    // If even one of the server doesn't contain the article ID,
-                    // then the read quorum cannot be established and we return 
-                    // an error message to the client
-                    if (!articleMap.containsKey(articleID)){
-                        System.out.println("[SERVER]: Article not found for ID: " + articleID);
+                    String readResult = replica.GetTree().GetAtIndex(articleID);
+                    if (readResult == null){
+                        System.out.println("[SERVER]: Article ID does not exist.");
                         return "";
                     }
+                    responses.add(readResult);
                     numSuccessfulReads += 1;
-                    responses.add(articleMap.get(articleID));
-                    response = articleMap.get(articleID);
+                    response = readResult;
                 } catch (Exception e) {
                     // The server can be updated at a later time as this function is called periodically in the background.
                     System.out.println("[SERVER]: Error occurred while updating server. Please restart the server!");
