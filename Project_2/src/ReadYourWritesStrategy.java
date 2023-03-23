@@ -19,15 +19,10 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
                     return false;
                 }
                 for (BulletinBoardServerInterface replica : serverList){
-                    try {
-                        registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
-                        ServerToServerInterface peer = (ServerToServerInterface)
-                            registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
-                        if (!peer.UpdateTree(nextID, article, replyTo)) {
-                            return false;
-                        }
-                    } catch (Exception e) {
-                        System.out.println("[SERVER]: BulletinBoardServer_" + replica.GetServerNumber() +" is offline");
+                    registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
+                    ServerToServerInterface peer = (ServerToServerInterface)
+                        registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
+                    if (!peer.UpdateTree(nextID, article, replyTo)) {
                         return false;
                     }
                 }
@@ -37,7 +32,6 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
                 System.out.println(selfServer.GetTree());
                 
                 if (!selfServer.UpdateTree(nextID, article, replyTo)) {
-                    System.out.println("HERE!!!");
                     return false;
                 }
 
@@ -50,15 +44,11 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
                     // it was already updated above.
                     if (replica.GetServerNumber() == selfServer.GetServerNumber()) continue;
 
-                    try {
-                        registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
-                        ServerToServerInterface peer = (ServerToServerInterface)
-                            registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
-                        if (!peer.UpdateTree(nextID, article, replyTo)) {
-                            return false;
-                        }
-                    } catch (Exception e) {
-                        System.out.println("[SERVER]: BulletinBoardServer_" + replica.GetServerNumber() +" is offline");
+                    // Update all other replicas.
+                    registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
+                    ServerToServerInterface peer = (ServerToServerInterface)
+                        registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
+                    if (!peer.UpdateTree(nextID, article, replyTo)) {
                         return false;
                     }
                 }
@@ -67,8 +57,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
             coord.IncrementID();
             return true;
         } catch (Exception e){
-            //e.printStackTrace();
-            System.out.println("[SERVER]: ERROR!");
+            System.out.println("[SERVER]: Unable to post article/reply. Please restart the server!");
             return false;
         }  
     }
@@ -86,10 +75,11 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
      * @param contentTree article tree from server object that called this
      * sequential consistency, just read from local
      */
-    public String ServerChoose(int articleID, ReferencedTree contentTree) {
+    public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree) {
         String result = contentTree.GetAtIndex(articleID);
         if (result == null) {
-            return "[SERVER]: Article not found for ID: " + articleID;
+            System.out.println("[SERVER]: Article not found for ID: " + articleID);
+            return "";
         }
         return result;
     }

@@ -58,9 +58,11 @@ public class ReferencedTree implements Serializable {
      * @param replyTo ID of article to reply to, highest level if 0
      */
     public boolean AddNode(int newID, String article, int replyTo) {
+        if (replyTo >= directList.size()){
+            System.out.println("[SERVER]: The article being requested to reply to doesn't exist.");
+            return false;
+        }
         ReferencedNode replyToNode = directList.get(replyTo);
-        //System.out.println("ID: " + newID);
-        //System.out.println("Article:" + article);
 
         if (replyToNode == null) {
             return false;
@@ -83,20 +85,53 @@ public class ReferencedTree implements Serializable {
         for (ReferencedNode child : root.children) {
             result += ReadChild(child, "");
         }
-        System.out.println(root.children.size());
-        System.out.println(result);
         return result;
     }
+
+    public HashMap<Integer, String> ParseTree(String readResult) {
+        HashMap<Integer, String> articleMap = new HashMap<>();
+        String[] lines = readResult.split("\n");
+        
+        ArrayList<Integer> articleIndices = new ArrayList<>();
+        for (int i = 0; i < lines.length; i++){
+            if (lines[i].substring(1,2).equals(".")){
+                articleIndices.add(i);
+            }
+        }
+
+        String[] articles = new String[articleIndices.size()];
+        int i = 0;
+        while (i < articleIndices.size()){
+            if (i + 1 >= articleIndices.size()){
+                articles[i] = String.join("\n", Arrays.copyOfRange(lines, articleIndices.get(i), lines.length));
+                break;
+            }
+            articles[i] = String.join("\n", Arrays.copyOfRange(lines, articleIndices.get(i), articleIndices.get(i+1)));
+            i += 1;
+        }
+
+        for (String line : articles){
+            if (line.substring(1, 2).equals(".")){
+                String articleID = line.substring(0,1);
+                articleMap.put(Integer.parseInt(articleID), line);
+            }
+        }
+
+        return articleMap;
+    }
+
 
     /**
      * recursive helper for Read()
      */
     private String ReadChild(ReferencedNode parent, String indent) {
-        String result = "\n" + indent + parent.ID + ".  " + parent.article;
+        String result = indent + parent.ID + ".  ";
         if (parent.article.length() > 16) {  // too long, cut to preview
-            // TODO: Fix minor bug with article preview
-            result += parent.article.substring(0, 12) + "...";
+            result += parent.article.substring(0, 12) + "..." + "\n";
+        } else {
+            result += parent.article + "\n";
         }
+
         for (ReferencedNode child : parent.children) {
             result += ReadChild(child, indent + "  ");
         }
@@ -104,7 +139,7 @@ public class ReferencedTree implements Serializable {
     }
 
     public String GetAtIndex(int idx) {
-        if (directList.size() == 1 || idx > directList.size()){
+        if (directList.size() == 1 || idx >= directList.size()){
             return null;
         }
 

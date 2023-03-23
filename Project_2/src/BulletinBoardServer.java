@@ -1,16 +1,10 @@
-import java.rmi.Naming;
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.net.MalformedURLException;
 import java.rmi.server.UnicastRemoteObject;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.io.IOException;
 import java.util.*;
 
-// TODO: simulate network delays, probably via wrapper/decorator class
 public class BulletinBoardServer extends UnicastRemoteObject
 implements BulletinBoardServerInterface, ServerToServerInterface {
     
@@ -20,6 +14,8 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     private ArrayList<BulletinBoardServerInterface> serverList;
     private final int MAX_CLIENTS = 5;
     private static int clientCount = 0;
+    private List<BulletinBoardServerInterface> readQuorum;
+    private List<BulletinBoardServerInterface> writeQuorum;
 
     // P2P data structures
     private int coordNum;
@@ -40,15 +36,16 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         coordHost = "localhost";
         serverHost = hostname;
         serverList = new ArrayList<>();
+        readQuorum = new ArrayList<>();
+        writeQuorum = new ArrayList<>();
         
         if (consistency.equals("sequential")) {
             cStrat = new SequentialStrategy();
         } else if (consistency.equals("readyourwrites")) {
             cStrat = new ReadYourWritesStrategy();
+        } else if (consistency.equals("quorum")) {
+            cStrat = new QuorumStrategy();
         }
-        // else if (consistency.equals("quorum")) {
-
-        // }
         
         else {
             System.out.println("Invalid strategy entered, defaulting to sequential");
@@ -159,7 +156,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         if (articleID < 1) {
             return "[SERVER] Article ID must be a positive integer.";
         }
-        return cStrat.ServerChoose(articleID, contentTree);
+        return cStrat.ServerChoose(this, articleID, contentTree);
     }
 
 
@@ -202,7 +199,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * returns message if article isn't found
      */
     public String CoordinatorChoose(int articleID) throws RemoteException {
-        return cStrat.ServerChoose(articleID, contentTree);
+        return cStrat.ServerChoose(this, articleID, contentTree);
     }
 
     private static boolean CheckValidPort(int port){
@@ -265,6 +262,61 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         contentTree = new ReferencedTree(tree);
     }
 
+    public List<BulletinBoardServerInterface> GetWriteQuorum(){
+        return writeQuorum;
+    }
+
+    public List<BulletinBoardServerInterface> GetReadQuorum(){
+        return readQuorum;
+    }
+
+    public void SetQuorums(int NR, int NW){
+        // Add coordinator to server list so that have have Nr + Nw - 1 servers
+        if (!serverList.contains(this)){
+            this.serverList.add(this);
+        }
+        Collections.shuffle(this.serverList);
+
+        this.writeQuorum = new ArrayList<>();
+        this.readQuorum = new ArrayList<>();
+
+        // Add to write quorum after shuffling server list
+        for (int i = 0; i < NW; i++){
+            this.writeQuorum.add(serverList.get(i));
+        }
+
+        // Add to read quorum after shuffling server list
+        for (int i = NW-1; i < NR + NW - 1; i++){
+            this.readQuorum.add(serverList.get(i));
+        }
+    }
+
+    // function for pinging coordinator from other servers
+    public boolean PingCoordinator() throws RemoteException{
+        try{
+            Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), 2004);
+            BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
+                                                    registry.lookup("BulletinBoardServer_" + 5);
+            //System.out.println("[SERVER]: Server pinged Coordinator. Coordinator is online");
+            return true;
+        } catch (Exception e){
+            return false;
+        }
+    }
+
+    // overloaded Ping(), where the FULL server name must be passed in
+    public boolean Ping() throws RemoteException {
+        try{
+            Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), this.GetServerPort());
+            BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
+                                                    registry.lookup("BulletinBoardServer_" + this.GetServerNumber());
+            System.out.println("[SERVER]: Client pinged server. Server is online.");
+            return true;
+        } catch (Exception e){
+            return false;
+        }
+    }
+
     public static void main(String[] args){
         // If no argument is specified, then print error message and exit
         if (args.length != 3){
@@ -295,26 +347,36 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
             BulletinBoardServerInterface server = new BulletinBoardServer(port, serverNum, args[0], args[2]);
             Registry registry = LocateRegistry.createRegistry(port);
             registry.rebind("BulletinBoardServer_" + serverNum, server);
-            System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);
 
             // Connect to central server if this is a replica
             if (serverNum != 5){
                 try{
-                    // TODO: Refactor this!!!
                     registry = LocateRegistry.getRegistry("localhost", 2004);
-                    ServerToServerInterface coord = (ServerToServerInterface) registry.lookup("BulletinBoardServer_" + 5);
-                    coord.AddToServerList(server);
-
-                    // TODO: If central server crashes, then stop every other server
                     // Update the content tree of a newly joined server if it joins later in the session.
                     BulletinBoardServerInterface coordinator = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_" + 5);
                     server.SetTree(coordinator.GetTree());
+                    coordinator.AddToServerList(server);
+
+                    // Ping coordinator server
+                    Timer timer = new Timer();
+                    TimerTask task = new TimerTask() {
+                        public void run(){
+                            try {
+                                coordinator.PingCoordinator();
+                            } catch (Exception e){
+                                System.out.println("[SERVER]: Coordinator is offline. Exiting...");
+                                System.exit(0);
+                            }
+                        }
+                    };
+                    timer.schedule(task, 0, 1000);
                 } catch (Exception e){
                     //e.printStackTrace();
                     System.out.println("[SERVER]: Please start the coordinator server first.");
                     System.exit(0);
                 }
             }
+            System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);
         } catch(Exception e) {
             //e.printStackTrace();  // DEBUG
             System.out.println("\n[SERVER]: Error occurred while launching server. It's possible that the port specified is currently in use.");

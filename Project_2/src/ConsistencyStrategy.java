@@ -1,13 +1,7 @@
-import java.rmi.RemoteException;
-import java.rmi.Naming;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.net.InetAddress;
-
 public interface ConsistencyStrategy
 {
     /**
-     *
+     * Post/Reply to articles
      */
     public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer);
@@ -17,5 +11,5 @@ public interface ConsistencyStrategy
      * whether it contacts other servers (quorum) or just uses its local copy
      */
     public String ServerRead(BulletinBoardServer selfServer);
-    public String ServerChoose(int articleID, ReferencedTree contentTree);
+    public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree);
 }

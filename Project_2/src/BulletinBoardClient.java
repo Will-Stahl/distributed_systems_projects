@@ -1,13 +1,7 @@
 import java.rmi.RemoteException;
-import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.net.InetAddress;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.io.IOException;
-import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class BulletinBoardClient {
@@ -198,7 +192,7 @@ public class BulletinBoardClient {
                     System.out.println("[CLIENT]: Please join a server before attempting to post, read, reply or choose!");
                     return;
                 }
-
+                
                 // Get a random active server
                 Random rand = new Random();
                 BulletinBoardServerInterface server = joinedServers.get(rand.nextInt(joinedServers.size()));
@@ -206,36 +200,86 @@ public class BulletinBoardClient {
                 if (clientRequest.startsWith("post:")){
                     String[] parts = clientRequest.split(":");
                     boolean articlePublished = server.Publish(parts[1].trim());
-                    /* 
                     if (articlePublished){
                         System.out.println("[CLIENT]: Article successfully published by server.");
                     } else{
                         System.out.println("[CLIENT]: Article was not published due to an error. Please try again.");
-                    }*/
+                    }
                 } else if (clientRequest.startsWith("read")){
                     String readResult = server.Read();
                     if (readResult.length() == 0) {
                         System.out.println("[CLIENT]: No article has been posted yet by any client.");
                     } else {
                         System.out.println("[CLIENT]: Read operation was successful! Printing articles below:");
-                        System.out.println(readResult);
+                        HandleResultView(readResult);
                     }
                 } else if (clientRequest.startsWith("choose:")){
                     String[] parts = clientRequest.split(":");
                     String result = server.Choose(Integer.parseInt(parts[1].trim()));
-                    System.out.println(result);
+                    if (result.trim().length() == 0){
+                        System.out.printf("[CLIENT]: Article with ID %s does not exist on the server.\n", parts[1].trim());
+                    } else {
+                        System.out.println("\n[CLIENT]: Article is below:\n");
+                        System.out.println(result);
+                    }
                 } else if (clientRequest.startsWith("reply:")){
                     String[] parts = clientRequest.split(":");
                     String replyString = parts[1].trim();
                     String[] replyParts = replyString.split(";");
                     String articleID = replyParts[0].trim();
                     String articleReply = replyParts[1].trim();
-                    server.Reply(articleReply, Integer.parseInt(articleID));
+                    boolean reply = server.Reply(articleReply, Integer.parseInt(articleID));
+                    if (reply){
+                        System.out.println("[CLIENT]: Reply was posted successfully.");
+                    } else {
+                        System.out.println("[CLIENT]: Server was unable to post your reply. Try again later!");
+                    }
                 }
             } 
         } catch (RemoteException e){
             System.out.println("[CLIENT]: No response from server since it is offline. Try joining another server!");
         }
+    }
+
+    public ArrayList<BulletinBoardServerInterface> GetServerList(){
+        return joinedServers;
+    }
+
+
+    private static void HandleResultView(String readResult){
+        String[] lines = readResult.split("\n");
+
+        // Show only 5 IDs at a time
+        System.out.println("\n[CLIENT]: Article List: ");
+        if (lines.length < 5){
+            System.out.println("\n" + String.join("\n",Arrays.copyOfRange(lines, 0, lines.length)));
+            return;
+        } else {
+            System.out.println("\n" + String.join("\n",Arrays.copyOfRange(lines, 0, 5)));
+            if (lines.length > 5) {
+                Scanner sc = new Scanner(System.in);
+                int startIdx = 5;
+                while (true){
+                    System.out.println("\n[CLIENT] Type \"next\" to go to the next page of results or \"exit\" to exit article viewing: ");
+                    String clientRequest = sc.nextLine();
+                    if (clientRequest.equalsIgnoreCase("next")) {
+                        System.out.println("\nContinued:");
+                        if (startIdx + 5 > lines.length) {
+                            System.out.println(String.join("\n", Arrays.copyOfRange(lines, startIdx, lines.length)));
+                            break;
+                        } else {
+                            System.out.println(String.join("\n", Arrays.copyOfRange(lines, startIdx, startIdx+5)));
+                            startIdx += 5;
+                        }
+                    } else if (clientRequest.equalsIgnoreCase("exit")) {
+                        System.out.println("\n[CLIENT]: Exiting article viewing...");
+                        return;
+                    }
+                }  
+            }
+        }
+        
+         
     }
 
     private static void HandleJoinOrLeaveRequests(String hostName, String IP, int clientPort, String clientRequest) throws RemoteException{
@@ -321,6 +365,7 @@ public class BulletinBoardClient {
                     }
                 }
             }).start();
+            
         } catch (Exception e){
             System.out.println("[CLIENT]: Error occurred. Exiting...");
             System.exit(0);
