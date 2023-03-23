@@ -211,21 +211,29 @@ public class BulletinBoardClient {
                         System.out.println("[CLIENT]: No article has been posted yet by any client.");
                     } else {
                         System.out.println("[CLIENT]: Read operation was successful! Printing articles below:");
-                        //System.out.println(readResult);
                         HandleResultView(readResult);
                     }
                 } else if (clientRequest.startsWith("choose:")){
                     String[] parts = clientRequest.split(":");
                     String result = server.Choose(Integer.parseInt(parts[1].trim()));
-                    System.out.println(result);
-
+                    if (result.trim().length() == 0){
+                        System.out.printf("[CLIENT]: Article with ID %s does not exist on the server.\n", parts[1].trim());
+                    } else {
+                        System.out.println("\n[CLIENT]: Article is below:\n");
+                        System.out.println(result);
+                    }
                 } else if (clientRequest.startsWith("reply:")){
                     String[] parts = clientRequest.split(":");
                     String replyString = parts[1].trim();
                     String[] replyParts = replyString.split(";");
                     String articleID = replyParts[0].trim();
                     String articleReply = replyParts[1].trim();
-                    server.Reply(articleReply, Integer.parseInt(articleID));
+                    boolean reply = server.Reply(articleReply, Integer.parseInt(articleID));
+                    if (reply){
+                        System.out.println("[CLIENT]: Reply was posted successfully.");
+                    } else {
+                        System.out.println("[CLIENT]: Server was unable to post your reply. Try again later!");
+                    }
                 }
             } 
         } catch (RemoteException e){
@@ -260,13 +268,13 @@ public class BulletinBoardClient {
         }
 
         // Show only 5 IDs at a time
-        System.out.println("\nArticle List: ");
+        System.out.println("\n[CLIENT]: Article List: ");
         if (articles.length < 5){
             System.out.println("\n" + String.join("\n",Arrays.copyOfRange(articles, 0, articles.length)));
         } else {
             System.out.println("\n" + String.join("\n",Arrays.copyOfRange(articles, 0, 5)));
         }
-        
+
         if (articles.length > 5) {
             Scanner sc = new Scanner(System.in);
             int startIdx = 5;

@@ -86,18 +86,16 @@ public class QuorumStrategy implements ConsistencyStrategy {
 
     public String ServerRead(BulletinBoardServer selfServer) {
         try {
+            if (selfServer.GetTree().ReadTree().length() == 0){
+                System.out.println("[SERVER]: No articles posted yet on the server.");
+                return "";
+            }
+            
             // Contact coordinator to initiate quorum
             Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
             BulletinBoardServerInterface coord = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_5");
 
             List<BulletinBoardServerInterface> readQuorum = coord.GetReadQuorum();
-            List<BulletinBoardServerInterface> writeQuorum = coord.GetWriteQuorum();
-
-            // Cant establish a read quorum if a write quorum already doesn't exist
-            if (writeQuorum.size() == 0){
-                System.out.println("[SERVER]: Cannot read posts that haven't been created yet!");
-                return "";
-            }
 
             int numSuccessfulReads = 0;
             Set<String> responses = new HashSet<>();
@@ -126,17 +124,15 @@ public class QuorumStrategy implements ConsistencyStrategy {
 
     public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree) {
         try {
+            if (selfServer.GetTree().ReadTree().length() == 0){
+                System.out.println("[SERVER]: No articles posted yet on the server.");
+                return "";
+            }
+
             Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
             BulletinBoardServerInterface coord = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_5");
 
             List<BulletinBoardServerInterface> readQuorum = coord.GetReadQuorum();
-            List<BulletinBoardServerInterface> writeQuorum = coord.GetWriteQuorum();
-
-            // Cant establish a read quorum if a write quorum already doesn't exist
-            if (writeQuorum.size() == 0){
-                System.out.println("[SERVER]: Cannot read posts that haven't been created yet!");
-                return "";
-            }
 
             int numSuccessfulReads = 0;
             Set<String> responses = new HashSet<>();
@@ -152,7 +148,7 @@ public class QuorumStrategy implements ConsistencyStrategy {
                     // an error message to the client
                     if (!articleMap.containsKey(articleID)){
                         System.out.println("[SERVER]: Article not found for ID: " + articleID);
-                        return "[CLIENT]: Article not found for ID: " + articleID;
+                        return "";
                     }
                     numSuccessfulReads += 1;
                     responses.add(articleMap.get(articleID));

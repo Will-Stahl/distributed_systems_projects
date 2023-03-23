@@ -73,11 +73,16 @@ public class SequentialStrategy implements ConsistencyStrategy {
      * sequential consistency, just read from local
      */
     public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree) {
+        if (selfServer.GetTree().ReadTree().length() == 0){
+            System.out.println("[SERVER]: No articles posted yet on the server.");
+            return "";
+        }
         HashMap<Integer, String> articleMap = contentTree.ParseTree(contentTree.ReadTree());
 
         // If invalid key, then return error message.
         if (!articleMap.containsKey(articleID)){
-            return "[CLIENT]: Article not found for ID: " + articleID;
+            System.out.println("[SERVER]: Article not found for ID: " + articleID);
+            return "";
         }
 
         return articleMap.get(articleID);
