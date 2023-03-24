@@ -34,7 +34,6 @@ public class BulletinBoardClient {
         System.out.println("4. Enter \"Read\" to read a list of articles.");
         System.out.println("5. Enter \"Choose\" to choose one of the articles and display its contents.");
         System.out.println("6. Enter \"Reply\" to reply to an existing article (also posts a new article).");
-        System.out.println("7. Enter \"Display\" to display all articles currently available.");
     }
 
     public String GetAndValidateClientRequest(){
@@ -44,13 +43,6 @@ public class BulletinBoardClient {
             System.out.println("\n[CLIENT]: Enter command: ");
             clientRequest = sc.nextLine();
             String lowerCaseRequest = clientRequest.trim().toLowerCase();
-
-            if (lowerCaseRequest.startsWith("display")){
-                // TODO: Add code for displaying available articles
-                //System.out.println("");
-                //break;
-            }
-
             // If we have a join or leave essage, then we can simply break from the loop
             if ((lowerCaseRequest.startsWith("join") ||  
                 lowerCaseRequest.startsWith("leave"))){
@@ -66,7 +58,7 @@ public class BulletinBoardClient {
             } else if (lowerCaseRequest.startsWith("reply")){
                 if (ValidReplyRequest(lowerCaseRequest)) break;
             } else{
-                System.out.println("\nOnly the following 7 operations can be performed by the client:");
+                System.out.println("\nOnly the following 6 operations can be performed by the client:");
                 DisplayOptions();
             }
         }
@@ -74,8 +66,8 @@ public class BulletinBoardClient {
     }
 
     private boolean ValidPostRequest(String lowerCaseRequest) {
-        if (!lowerCaseRequest.startsWith("post:")){
-            System.out.println("[CLIENT]:  Colon missing. Please use \"Post: <Article Title>;<Article Contents>\"");
+        if (!lowerCaseRequest.contains(":")){
+            System.out.println("[CLIENT]: Colon missing. Please use \"Post: <Article Title>;<Article Contents>\"");
             return false;
         }
 
@@ -86,6 +78,44 @@ public class BulletinBoardClient {
         }
 
         String articleString = parts[1].trim();
+        
+        return ValidArticleFormat(articleString);
+    }
+
+    private boolean ValidReplyRequest(String lowerCaseRequest) {
+        if (!lowerCaseRequest.contains(":")){
+            System.out.println("[CLIENT]: Colon missing. Please use \"Reply: <Article ID>;<Article Title>;<Article Contents>\"");
+            return false;
+        }
+
+        String[] parts = lowerCaseRequest.split(":");
+        if (parts.length != 2){
+            System.out.println("[CLIENT]: Invalid Reply format. Please use \"Reply: <Article ID>;<Article Title>;<Article Contents>\"");
+            return false;
+        }
+
+        String replyString = parts[1].trim();
+        if (!replyString.contains(";")){
+            System.out.println("[CLIENT]: Semicolons missing! Please use \"Reply: <Article ID>;<Article Title>;<Article Contents>\"");
+            return false;
+        }
+
+        String[] replyParts = replyString.split(";");
+        if (replyParts.length != 3){
+            System.out.println("[CLIENT]: Article ID or reply string are missing. Please use \"Reply: <Article ID>;<Article Title>;<Article Contents>\"");
+            return false;
+        }
+
+        String articleNumber = replyParts[0].trim();
+        if (!articleNumber.matches("\\d+")){
+            System.out.println("[CLIENT]: Article ID has to have a number. Example: \"Reply: 1;<Article Title>;<Article Contents>\" and so on.");
+            return false;
+        }
+
+        return ValidArticleFormat(replyParts[1].trim() + ";" + replyParts[2].trim());
+    }
+
+    private boolean ValidArticleFormat(String articleString){
         if (!articleString.contains(";")){
             System.out.println("[CLIENT]: Semicolon missing between title and contents. Article format should be \"<Article Title>;<Article Contents>\"");
             return false;
@@ -97,36 +127,13 @@ public class BulletinBoardClient {
             return false;
         }
 
-        return true;
-    }
-
-    private boolean ValidReplyRequest(String lowerCaseRequest) {
-        if (!lowerCaseRequest.startsWith("reply:")){
-            System.out.println("[CLIENT]:  Colon missing. Please use \"Reply: <Article ID>;<Reply>\"");
+        if (articleParts[0].trim().length() == 0){
+            System.out.println("[CLIENT]: Article title is missing. Article format should be \"<Article Title>;<Article Contents>\"");
             return false;
         }
 
-        String[] parts = lowerCaseRequest.split(":");
-        if (parts.length != 2){
-            System.out.println("[CLIENT]: Invalid Reply format. Please use \"Reply: <Article ID>;<Reply>\"");
-            return false;
-        }
-
-        String replyString = parts[1].trim();
-        if (!replyString.contains(";")){
-            System.out.println("[CLIENT]: Semicolon missing between ID and reply. Please use \"Reply: <Article ID>;<Reply>\"");
-            return false;
-        }
-
-        String[] replyParts = replyString.split(";");
-        if (replyParts.length != 2){
-            System.out.println("[CLIENT]: Article ID or reply are missing. Please use \"Reply: <Article ID>;<Reply>\"");
-            return false;
-        }
-
-        String articleNumber = replyParts[0].trim();
-        if (!articleNumber.matches("\\d+")){
-            System.out.println("[CLIENT]: Article ID has to have a number. Example: \"Reply: 1;Hello\" and so on.");
+        if (articleParts[1].trim().length() == 0){
+            System.out.println("[CLIENT]: Article contents are missing. Article format should be \"<Article Title>;<Article Contents>\"");
             return false;
         }
 
@@ -135,7 +142,7 @@ public class BulletinBoardClient {
 
     private boolean ValidChooseRequest(String lowerCaseRequest) {
         if (!lowerCaseRequest.startsWith("choose:")){
-            System.out.println("[CLIENT]:  Colon missing. Please use \"Choose: <Article ID>\"");
+            System.out.println("[CLIENT]: Colon missing. Please use \"Choose: <Article ID>\"");
             return false;
         }
 
@@ -154,11 +161,15 @@ public class BulletinBoardClient {
         return true;
     }
 
-    private static boolean ValidJoinOrLeaveRequestFormat(String lowerCaseRequest){
+    private boolean ValidJoinOrLeaveRequestFormat(String lowerCaseRequest){
+        if (!lowerCaseRequest.contains(":")){
+            System.out.println("[CLIENT]: Colon missing. Please use \"Join: <port number>\"");
+            return false;
+        }
 
         String[] parts = lowerCaseRequest.split(":");
         if (parts.length != 2){
-            System.out.println("[CLIENT]: Join or Leave commands can only be formatted like \"join: <port number>\" or \"leave: <port number>\"");
+            System.out.println("[CLIENT]: Join or Leave commands can only be formatted like \"Join: <port number>\" or \"leave: <port number>\"");
             return false;
         }
 
@@ -186,7 +197,7 @@ public class BulletinBoardClient {
         try{
             if (clientRequest.startsWith("join") || clientRequest.startsWith("leave")){
                 HandleJoinOrLeaveRequests(hostName, IP, clientPort, clientRequest);
-                
+
                 // Ping joined servers periodically to ensure they are live and can receive requests.
                 Timer timer = new Timer();
                 TimerTask task = new TimerTask() {
@@ -213,9 +224,8 @@ public class BulletinBoardClient {
                 Random rand = new Random();
                 BulletinBoardServerInterface server = joinedServers.get(rand.nextInt(joinedServers.size()));
 
-                
-
-                if (clientRequest.startsWith("post:")){
+                String lowerCaseRequest = clientRequest.toLowerCase();
+                if (lowerCaseRequest.startsWith("post:")){
                     String[] parts = clientRequest.split(":");
                     boolean articlePublished = server.Publish(parts[1].trim());
                     if (articlePublished){
@@ -223,7 +233,7 @@ public class BulletinBoardClient {
                     } else{
                         System.out.println("[CLIENT]: Article was not published due to an error. Please try again.");
                     }
-                } else if (clientRequest.startsWith("read")){
+                } else if (lowerCaseRequest.startsWith("read")){
                     String readResult = server.Read();
                     if (readResult.length() == 0) {
                         System.out.println("[CLIENT]: No article has been posted yet by any client.");
@@ -231,7 +241,7 @@ public class BulletinBoardClient {
                         System.out.println("[CLIENT]: Read operation was successful! Printing articles below:");
                         HandleResultView(readResult);
                     }
-                } else if (clientRequest.startsWith("choose:")){
+                } else if (lowerCaseRequest.startsWith("choose:")){
                     String[] parts = clientRequest.split(":");
                     String result = server.Choose(Integer.parseInt(parts[1].trim()));
                     if (result.trim().length() == 0){
@@ -240,17 +250,17 @@ public class BulletinBoardClient {
                         System.out.println("\n[CLIENT]: Article is below:\n");
                         System.out.println(result);
                     }
-                } else if (clientRequest.startsWith("reply:")){
+                } else if (lowerCaseRequest.startsWith("reply:")){
                     String[] parts = clientRequest.split(":");
                     String replyString = parts[1].trim();
                     String[] replyParts = replyString.split(";");
                     String articleID = replyParts[0].trim();
-                    String articleReply = replyParts[1].trim();
+                    String articleReply = replyParts[1].trim() + ";" + replyParts[2].trim();
                     boolean reply = server.Reply(articleReply, Integer.parseInt(articleID));
                     if (reply){
                         System.out.println("[CLIENT]: Reply was posted successfully.");
                     } else {
-                        System.out.println("[CLIENT]: Server was unable to post your reply. Try again later!");
+                        System.out.println("[CLIENT]: The article being requested to reply to doesn't exist.");
                     }
                 }
             } 
@@ -262,7 +272,6 @@ public class BulletinBoardClient {
     public ArrayList<BulletinBoardServerInterface> GetServerList(){
         return joinedServers;
     }
-
 
     private static void HandleResultView(String readResult){
         String[] lines = readResult.split("\n");
