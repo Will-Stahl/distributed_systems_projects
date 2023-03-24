@@ -310,7 +310,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         }
     }
 
-    // overloaded Ping(), where the FULL server name must be passed in
+    // Function for client pinging other servers
     public boolean Ping() throws RemoteException {
         try{
             Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), this.GetServerPort());

@@ -186,6 +186,22 @@ public class BulletinBoardClient {
         try{
             if (clientRequest.startsWith("join") || clientRequest.startsWith("leave")){
                 HandleJoinOrLeaveRequests(hostName, IP, clientPort, clientRequest);
+                
+                // Ping joined servers periodically to ensure they are live and can receive requests.
+                Timer timer = new Timer();
+                TimerTask task = new TimerTask() {
+                    public void run(){
+                        try {
+                            for (BulletinBoardServerInterface server : joinedServers){
+                                server.Ping();
+                            }
+                        } catch (Exception e){
+                            System.out.println("[SERVER]: Server is offline. Please try joining another server.");
+                            System.exit(0);
+                        }
+                    }
+                };
+                timer.schedule(task, 0, 1000);
             } else {
                 // If no servers have been joined yet, then we cant call post, read, choose or reply
                 if (joinedServers.size() == 0){
@@ -196,6 +212,8 @@ public class BulletinBoardClient {
                 // Get a random active server
                 Random rand = new Random();
                 BulletinBoardServerInterface server = joinedServers.get(rand.nextInt(joinedServers.size()));
+
+                
 
                 if (clientRequest.startsWith("post:")){
                     String[] parts = clientRequest.split(":");
