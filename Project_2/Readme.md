@@ -23,11 +23,18 @@ The port number used above can be 2000, 2001, 2002, 2003 and 2004. Any other por
 
 ## Running Client Side Tests
 Navigate to `test` folder with `cd test` from root.
-Open a terminal window in the `test` folder and type the following two commands to compile and run tests respectively:
+Open a terminal window in the `test` folder.
+
+Run the command below to compile Client Side tests:
 ````
 javac -cp ./../lib/junit-4.13.2.jar:. RunClientTestCases.java
-java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunClientTestCases
 ````
+
+Run the command below to execute the Client Side tests:
+```
+java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunClientTestCases
+```
+
 
 ## Running the Server tests
 Navigate to `test` folder with `cd test` from root. Copy the RMI interfaces from src to this directory with
