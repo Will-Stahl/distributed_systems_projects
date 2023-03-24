@@ -30,15 +30,15 @@ public class ReadYourWritesTest {
         Assert.assertEquals("", server.Read());
         Assert.assertFalse(server.Reply("test;article", 1));
         Assert.assertFalse(server.Reply("test;article", 0));
-        Assert.assertEquals(server.Choose(1), "[SERVER]: Article not found for ID: 1");
-        Assert.assertEquals(server.Choose(0), "[SERVER] Article ID must be a positive integer.");
-        Assert.assertEquals(server.Choose(-1), "[SERVER] Article ID must be a positive integer.");
+        Assert.assertEquals("[SERVER]: Article not found for ID: 1", server.Choose(1));
+        Assert.assertEquals("[SERVER] Article ID must be a positive integer.", server.Choose(0));
+        Assert.assertEquals("[SERVER] Article ID must be a positive integer.", server.Choose(-1));
         // now make the article exist
         Assert.assertTrue(server.Publish("test;article"));
         Assert.assertTrue(server.Reply("test;article", 1));
-        String cmp = "\n1.  test;article\n  2.  test;article";
-        Assert.assertEquals(server.Read(), cmp);
-        Assert.assertEquals(server.Choose(1), "test;article");
+        String cmp = "1.  test;article\n  2.  test;article\n";
+        Assert.assertEquals(cmp, server.Read());
+        Assert.assertEquals("test;article", server.Choose(1));
     }
 
     // check for expected consistency behaviour across multiple servers

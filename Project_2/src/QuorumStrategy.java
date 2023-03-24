@@ -143,7 +143,7 @@ public class QuorumStrategy implements ConsistencyStrategy {
                     String readResult = replica.GetTree().GetAtIndex(articleID);
                     if (readResult == null){
                         System.out.println("[SERVER]: Article ID does not exist.");
-                        return "";
+                        return "[SERVER]: Article not found for ID: " + articleID;
                     }
                     responses.add(readResult);
                     numSuccessfulReads += 1;
