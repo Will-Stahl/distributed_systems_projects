@@ -22,6 +22,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     private int coordPort;
     private String coordHost;
     private int nextID;
+    private String consistency;
     private ConsistencyStrategy cStrat;  // initialize to specifc strategy
     private ReferencedTree contentTree;  // article tree data structure
     private String serverHost;
@@ -38,6 +39,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         serverList = new ArrayList<>();
         readQuorum = new ArrayList<>();
         writeQuorum = new ArrayList<>();
+        this.consistency = consistency;
         
         if (consistency.equals("sequential")) {
             cStrat = new SequentialStrategy();
@@ -46,10 +48,10 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         } else if (consistency.equals("quorum")) {
             cStrat = new QuorumStrategy();
         }
-        
         else {
             System.out.println("Invalid strategy entered, defaulting to sequential");
             cStrat = new SequentialStrategy();
+            this.consistency = "sequential";
         }
     }
 
@@ -250,6 +252,10 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         return nextID;
     }
 
+    public String GetConsistenyString(){
+        return consistency;
+    }
+
     public ArrayList<BulletinBoardServerInterface> GetServerList(){
         return serverList;
     }
@@ -354,6 +360,13 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
                     registry = LocateRegistry.getRegistry("localhost", 2004);
                     // Update the content tree of a newly joined server if it joins later in the session.
                     BulletinBoardServerInterface coordinator = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_" + 5);
+
+                    if (!coordinator.GetConsistenyString().equals(server.GetConsistenyString())){
+                        System.out.println("[SERVER]: Replica's consistency protocol must match coordinator's consistency protocol.");
+                        System.out.println("[SERVER]: Please re-run the replica with the correct consistency. Exiting...");
+                        System.exit(0);
+                    }
+
                     server.SetTree(coordinator.GetTree());
                     coordinator.AddToServerList(server);
 
@@ -371,7 +384,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
                     };
                     timer.schedule(task, 0, 1000);
                 } catch (Exception e){
-                    //e.printStackTrace();
                     System.out.println("[SERVER]: Please start the coordinator server first.");
                     System.exit(0);
                 }
