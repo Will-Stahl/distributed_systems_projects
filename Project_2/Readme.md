@@ -24,8 +24,8 @@ The port number used above can be 2000, 2001, 2002, 2003 and 2004. Any other por
 ## Running the tests
 Navigate to `test` folder with `cd test` from root. Copy the RMI interfaces from src to this directory with
 ````
-cp ../src/ServerToServerInterface.class
-cp ../src/BulletinBoardServerInterface.class
+cp ../src/ServerToServerInterface.class ./
+cp ../src/BulletinBoardServerInterface.class ./
 ````
 but only after compiling in the previous steps.
 Compile the tests and system starter with:
