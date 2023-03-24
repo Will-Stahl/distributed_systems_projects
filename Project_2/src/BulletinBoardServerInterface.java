@@ -5,6 +5,7 @@ import java.util.*;
 public interface BulletinBoardServerInterface extends Remote
 {
     public int GetServerPort() throws RemoteException;
+    public String GetConsistenyString() throws RemoteException;
     public void AddToServerList(BulletinBoardServerInterface server) throws RemoteException;
     public List<BulletinBoardServerInterface> GetWriteQuorum() throws RemoteException;
     public List<BulletinBoardServerInterface> GetReadQuorum() throws RemoteException;
