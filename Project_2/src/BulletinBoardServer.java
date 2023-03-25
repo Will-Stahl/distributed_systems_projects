@@ -331,7 +331,14 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
             System.exit(0);
         }
 
-        int port = Integer.parseInt(args[1]);
+        int port = 0;
+        try {
+            port = Integer.parseInt(args[1]);
+        } catch (Exception e){
+            System.out.println("\n[SERVER]: Port number specified is invalid. Valid port numbers are 2000, 2001, 2002, 2003 and 2004");
+            System.out.println("[SERVER]: Exiting...");
+            System.exit(0);
+        }
 
         // If port is invalid, then print error message and exit.
         if (!CheckValidPort(port)){
