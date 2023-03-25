@@ -1,3 +1,6 @@
+# Bulletin Board Server
+Authors: Jashwin Acharya (`achar061`), William Stahl (`stahl186`)
+
 ## Compile all code
 navigate to the `src` directory. Then run our compilation script.
 ````
@@ -49,5 +52,14 @@ If `StartSystem` isn't started before the tests and with the appropriate consist
 To test a different consistency, end StartSystem by entering anything. Start both programs again with a different consistency argument.
 NOTE: Tests may occasionally fail due to connection errors (`java.net.ConnectException: Connection refused`) If this happens, please run them again after restarting `StartSystem`.
 
-## Assumptions/Decisions
+## Design Doc
+### Assumptions/Decisions
 In order to guarantee read-your-writes consistency, we wait to return to the client until its write request has propagated through the Bulletin Board System.
+
+### Components
+
+### Analysis
+For the analysis, we chose to do a theoratical measure of each consistency based on the number of messages sent, from the client's request to the server's official response. We include registry queries (locating, looking up), and we include the best and worst cases of successful client requests (the number of messages passed can depend on whether the client contacts the coordinator or not).
+
+
+## Testing Description
