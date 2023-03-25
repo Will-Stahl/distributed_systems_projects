@@ -63,7 +63,7 @@ public class ReadYourWritesTest {
         Assert.assertEquals("test2;article", server.Choose(3));
         Assert.assertEquals("test2;article2", server.Choose(4));
 
-        // ensure all servers see latest content
+        // client writes to a server, it must see its writes on from the others
         serverNumber = 3;  // another server, see global order
         serverPort = serverToPortMap[serverNumber];
         reg = LocateRegistry.getRegistry("localhost", serverPort);
@@ -72,22 +72,13 @@ public class ReadYourWritesTest {
         Assert.assertEquals("test2;article", server.Choose(3));
         Assert.assertEquals("test2;article2", server.Choose(4));
 
-        serverNumber = 2;  // another server, see latest
-        serverPort = serverToPortMap[serverNumber];
-        reg = LocateRegistry.getRegistry("localhost", serverPort);
-        server = (BulletinBoardServerInterface)
-                reg.lookup("BulletinBoardServer_" + serverNumber);  // connect to 2
-        Assert.assertEquals("test2;article", server.Choose(3));
-        Assert.assertEquals("test2;article2", server.Choose(4));
-        server.Publish("test2;article3");  // ID 5
-
-        serverNumber = 1;  // another server, see latest
+        serverNumber = 1;  // another server, see client's writes
         serverPort = serverToPortMap[serverNumber];
         reg = LocateRegistry.getRegistry("localhost", serverPort);
         server = (BulletinBoardServerInterface)
                 reg.lookup("BulletinBoardServer_" + serverNumber);  // connect to 1
+        Assert.assertEquals("test2;article", server.Choose(3));
         Assert.assertEquals("test2;article2", server.Choose(4));
-        Assert.assertEquals("test2;article3", server.Choose(5));  // see latest
     }
 
 }

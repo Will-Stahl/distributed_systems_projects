@@ -59,7 +59,20 @@ In order to guarantee read-your-writes consistency, we wait to return to the cli
 ### Components
 
 ### Analysis
-For the analysis, we chose to do a theoratical measure of each consistency based on the number of messages sent, from the client's request to the server's official response. We include registry queries (locating, looking up), and we include the best and worst cases of successful client requests (the number of messages passed can depend on whether the client contacts the coordinator or not).
+For the analysis, we chose to do a theoratical measure of each consistency based on the number of messages sent, from the client's request to the server's official response. We include registry queries (locating, looking up). The number of messages passed assumes the worst case (client did not contact coordinator) where the server responded after successfully completing a non-trivial request.
 
+![Consistency Comparisons](consistency_comp.png)
+![Quorum comparisons for different Nr, Nw](quorum_comp.png)
 
 ## Testing Description
+One test class exists for each consistency. Each of these classes has a test for basic operations between a client and one server. Expected output is tested for
+1. Read() with published content
+2. Choose() for nonexistant ID
+3. Reply() to a nonexistant ID
+4. Post()
+5. (1), (2), and (3) where the items exist
+6. Expected format for all the above
+
+Each of these classes also each has a test where a client switches which server it interacts with multiple times. In the sequential test, some articles are posted, and a client checks that they are in the same order of reading across multiple servers. The quorum test posts some articles and ensures they can be read from all servers. Lastly, the read-your-writes test ends up very similar to the quorum tests in that, as a client, it writes to a server and checks that it can read those writes from other servers.
+
+The client command line validation functions are thoroughly tested as well in `ClientTestCases.java'. Valid and invalid input are fed into these tests where they are correcly valided and can eliminate whitespace.
