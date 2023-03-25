@@ -52,6 +52,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
             }
             
             selfServer.IncrementID();
+            System.out.println("[SERVER]: Write operation was successful!");
             return result;
         } catch (Exception e){
             System.out.println("[SERVER]: Unable to post article/reply. Please restart the server!");
@@ -64,7 +65,13 @@ public class SequentialStrategy implements ConsistencyStrategy {
      * sequential consistency, just read from local
      */
     public String ServerRead(BulletinBoardServer selfServer) {
-        return selfServer.GetTree().ReadTree();
+        String articles = selfServer.GetTree().ReadTree();
+        if (articles.length() == 0){
+            System.out.println("[SERVER]: No articles posted yet on the server.");
+            return "";
+        }
+        System.out.println("[SERVER]: Read operation was successful!");
+        return articles;
     }
 
     /**
