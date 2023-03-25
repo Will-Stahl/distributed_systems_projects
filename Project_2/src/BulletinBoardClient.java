@@ -194,25 +194,27 @@ public class BulletinBoardClient {
      */
     public void SendClientRequestToServer(String hostName, InetAddress address){
         String clientRequest = GetAndValidateClientRequest();
+
+        // Ping server once to ensure that the joined servers list is up-to-date with
+        // the latest server objects that are currently live.
+        ArrayList<BulletinBoardServerInterface> serversToBeRemoved = new ArrayList<>();
+        for (BulletinBoardServerInterface server : joinedServers){
+            try {
+                server.Ping();
+            } catch (Exception e){
+                serversToBeRemoved.add(server);
+            }
+        }
+        // Remove servers that are not currently live to ensure client always has the updated 
+        // list of clients
+        for (BulletinBoardServerInterface server : serversToBeRemoved){
+            joinedServers.remove(server);
+        }
+
         try{
             if (clientRequest.startsWith("join") || clientRequest.startsWith("leave")){
                 HandleJoinOrLeaveRequests(hostName, IP, clientPort, clientRequest);
-
-                // Ping joined servers periodically to ensure they are live and can receive requests.
-                Timer timer = new Timer();
-                TimerTask task = new TimerTask() {
-                    public void run(){
-                        try {
-                            for (BulletinBoardServerInterface server : joinedServers){
-                                server.Ping();
-                            }
-                        } catch (Exception e){
-                            System.out.println("[SERVER]: Server is offline. Please try joining another server.");
-                            System.exit(0);
-                        }
-                    }
-                };
-                timer.schedule(task, 0, 1000);
+                System.out.println("[CLIENT]: Added " + joinedServers.size() + " of servers");
             } else {
                 // If no servers have been joined yet, then we cant call post, read, choose or reply
                 if (joinedServers.size() == 0){
