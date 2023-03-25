@@ -40,8 +40,8 @@ public class SequentialTest /*extends Thread*/ {
         // now make the article exist
         Assert.assertTrue(server.Publish("test;article"));
         Assert.assertTrue(server.Reply("test;article", 1));
-        String cmp = "\n1.  test;article\n  2.  test;article";
-        Assert.assertEquals(server.Read(), cmp);
+        String cmp = "1.  test;article\n  2.  test;article\n";
+        Assert.assertEquals(cmp, server.Read());
         Assert.assertEquals(server.Choose(1), "test;article");
 
     }

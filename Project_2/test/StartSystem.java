@@ -46,7 +46,7 @@ public class StartSystem {
         }
 
         Scanner sc = new Scanner(System.in);
-        System.out.println("Enter anything to shut down the system.");
+        System.out.println("Enter anything to shut down the Bulletin Board System.");
         sc.nextLine();
         billBoard.killSevers();
     }

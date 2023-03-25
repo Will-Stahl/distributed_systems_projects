@@ -126,7 +126,7 @@ public class QuorumStrategy implements ConsistencyStrategy {
         try {
             if (selfServer.GetTree().ReadTree().length() == 0){
                 System.out.println("[SERVER]: No articles posted yet on the server.");
-                return "";
+                return "[SERVER]: Article not found for ID: " + articleID;
             }
 
             Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
@@ -164,7 +164,7 @@ public class QuorumStrategy implements ConsistencyStrategy {
             e.printStackTrace();
             System.out.println("[SERVER]: Make sure coordinator is online!");
         }
-        return "";
+        return "[SERVER]: Article not found for ID: " + articleID;
     }
 
 }
