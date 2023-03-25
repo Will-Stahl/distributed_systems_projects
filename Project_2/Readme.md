@@ -5,7 +5,7 @@ Authors: Jashwin Acharya (`achar061`), William Stahl (`stahl186`)
 navigate to the `src` directory. Then run our compilation script.
 ````
 cd src
-./compile_and_copy
+./compile_and_copy.sh
 ````
 
 ## Running servers
