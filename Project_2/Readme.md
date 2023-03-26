@@ -2,12 +2,19 @@
 
 Authors: Jashwin Acharya (`achar061`), William Stahl (`stahl186`)
 
-Contributions:
+Individual Contributions:
 
 1. Jashwin Acharya:
-   a. Implemented the complete client UI as well as client request validation functions
-   b. Implemented all client side unit tests
-   c. Implemented Read-Your-Writes and Quorum consistency as well as the SYNCH operation in BulletinBoardServer.java
+<ul>
+    <li> Jashwin Acharya
+        <ul>
+            <li> Implemented the complete client UI as well as client request validation functions. </li>
+            <li> Implemented all client side unit tests </li>
+            <li> Implemented Read-Your-Writes and Quorum consistency as well as the SYNCH operation in BulletinBoardServer.java </li>
+        </ul>
+    </li>
+</ul>
+
 2. Willaim Stahl:
 
 ## Compile all code
