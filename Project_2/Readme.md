@@ -12,9 +12,9 @@ Individual Contributions:
             <li> Implemented Read-Your-Writes and Quorum consistency as well as the SYNCH operation in BulletinBoardServer.java </li>
         </ul>
     </li>
+    <li> William Stahl
+    </li>
 </ul>
-
-2. Willaim Stahl:
 
 ## Compile all code
 
