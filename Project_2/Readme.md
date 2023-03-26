@@ -4,7 +4,6 @@ Authors: Jashwin Acharya (`achar061`), William Stahl (`stahl186`)
 
 Individual Contributions:
 
-1. Jashwin Acharya:
 <ul>
     <li> Jashwin Acharya
         <ul>
