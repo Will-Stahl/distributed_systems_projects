@@ -2,6 +2,14 @@
 
 Authors: Jashwin Acharya (`achar061`), William Stahl (`stahl186`)
 
+Contributions:
+
+1. Jashwin Acharya:
+   a. Implemented the complete client UI as well as client request validation functions
+   b. Implemented all client side unit tests
+   c. Implemented Read-Your-Writes and Quorum consistency as well as the SYNCH operation in BulletinBoardServer.java
+2. Willaim Stahl:
+
 ## Compile all code
 
 Navigate to the `src` directory.
@@ -385,7 +393,7 @@ One test class exists for each consistency. Each of these classes has a test for
 
 Each of these classes also each has a test where a client switches which server it interacts with multiple times. In the sequential test, some articles are posted, and a client checks that they are in the same order of reading across multiple servers. The quorum test posts some articles and ensures they can be read from all servers. Lastly, the read-your-writes test ends up very similar to the quorum tests in that, as a client, it writes to a server and checks that it can read those writes from other servers.
 
-The client command line validation functions are thoroughly tested as well in `ClientTestCases.java' and their details are below:
+The client command line validation functions are thoroughly tested as well in `ClientTestCases.java' for checking for missing or invalid article formats as well as making sure whitespaces are not an issue when parsing client requests. Details are below:
 
 1. 3 test cases for checking valid post commands
 2. 8 test cases for checking invalid post commands
