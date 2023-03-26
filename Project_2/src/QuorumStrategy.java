@@ -1,4 +1,3 @@
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.*;
@@ -13,13 +12,12 @@ public class QuorumStrategy implements ConsistencyStrategy {
             // Contact coordinator to initiate quorum
             Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
             BulletinBoardServerInterface coord = (BulletinBoardServerInterface) registry.lookup("BulletinBoardServer_" + selfServer.GetCoordNum());
-            
+
             // Initialize random servers to read and write quorums
             coord.SetQuorums(NR, NW);
 
             // Get current server list
             ArrayList<BulletinBoardServerInterface> serverList = coord.GetServerList();
-            System.out.println(serverList.size());
             if (serverList.size() != NR + NW - 1) {
                 System.out.println("[SERVER]: Please ensure all 5 servers are running!");
                 return false;
@@ -79,7 +77,6 @@ public class QuorumStrategy implements ConsistencyStrategy {
                 }
             }
         } catch (Exception e){
-            e.printStackTrace();
             System.out.println("[SERVER]: Make sure coordinator is online!");
         }
     }
@@ -110,12 +107,17 @@ public class QuorumStrategy implements ConsistencyStrategy {
                 }
             }
             
+            // Make sure all read quorum servers agree on the read value
+            // and that the read value is the same across all of them, 
+            // hence the "responses.size() == 1" check where responses
+            // is a hashset that contains only unique response values.
             if (numSuccessfulReads == NR && responses.size() == 1) {
                 System.out.println("[SERVER]: Read Quorum agreed on the same read value.");
                 return response;
             }
 
             System.out.println("[SERVER]: Read Quorum did not agree on the same read value.");
+            System.out.println("[SERVER]: It's possible that one of the read servers has gone offline.");
         } catch (Exception e) {
             System.out.println("[SERVER]: Make sure coordinator is online!");
         }
@@ -161,7 +163,6 @@ public class QuorumStrategy implements ConsistencyStrategy {
             }
 
         } catch (Exception e){
-            e.printStackTrace();
             System.out.println("[SERVER]: Make sure coordinator is online!");
         }
         return "[SERVER]: Article not found for ID: " + articleID;

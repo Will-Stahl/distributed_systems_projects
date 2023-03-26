@@ -88,39 +88,6 @@ public class ReferencedTree implements Serializable {
         return result;
     }
 
-    public HashMap<Integer, String> ParseTree(String readResult) {
-        HashMap<Integer, String> articleMap = new HashMap<>();
-        String[] lines = readResult.split("\n");
-        
-        ArrayList<Integer> articleIndices = new ArrayList<>();
-        for (int i = 0; i < lines.length; i++){
-            if (lines[i].substring(1,2).equals(".")){
-                articleIndices.add(i);
-            }
-        }
-
-        String[] articles = new String[articleIndices.size()];
-        int i = 0;
-        while (i < articleIndices.size()){
-            if (i + 1 >= articleIndices.size()){
-                articles[i] = String.join("\n", Arrays.copyOfRange(lines, articleIndices.get(i), lines.length));
-                break;
-            }
-            articles[i] = String.join("\n", Arrays.copyOfRange(lines, articleIndices.get(i), articleIndices.get(i+1)));
-            i += 1;
-        }
-
-        for (String line : articles){
-            if (line.substring(1, 2).equals(".")){
-                String articleID = line.substring(0,1);
-                articleMap.put(Integer.parseInt(articleID), line);
-            }
-        }
-
-        return articleMap;
-    }
-
-
     /**
      * recursive helper for Read()
      */

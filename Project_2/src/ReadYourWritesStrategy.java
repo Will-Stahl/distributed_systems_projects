@@ -29,16 +29,12 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
             } else {
                 // Get primary copy of article from coordinator
                 selfServer.SetTree(coord.GetTree());
-                System.out.println(selfServer.GetTree());
-                
                 if (!selfServer.UpdateTree(nextID, article, replyTo)) {
                     return false;
                 }
 
                 // Send updated tree to every other server including the coordinator
                 coord.SetTree(selfServer.GetTree());
-
-                System.out.println(serverList.size());
                 for (BulletinBoardServerInterface replica : serverList){
                     // Don't update the server that called this function since
                     // it was already updated above.
@@ -55,6 +51,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
             }
             
             coord.IncrementID();
+            System.out.println("[SERVER]: Write operation was successful!");
             return true;
         } catch (Exception e){
             System.out.println("[SERVER]: Unable to post article/reply. Please restart the server!");
@@ -67,7 +64,13 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
      * sequential consistency, just read from local
      */
     public String ServerRead(BulletinBoardServer selfServer) {
-        return selfServer.GetTree().ReadTree();
+        String articles = selfServer.GetTree().ReadTree();
+        if (articles.length() == 0){
+            System.out.println("[SERVER]: No articles posted yet on the server.");
+            return "";
+        }
+        System.out.println("[SERVER]: Read operation was successful!");
+        return articles;
     }
 
     /**

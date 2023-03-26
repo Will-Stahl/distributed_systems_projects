@@ -214,7 +214,6 @@ public class BulletinBoardClient {
         try{
             if (clientRequest.startsWith("join") || clientRequest.startsWith("leave")){
                 HandleJoinOrLeaveRequests(hostName, IP, clientPort, clientRequest);
-                System.out.println("[CLIENT]: Added " + joinedServers.size() + " of servers");
             } else {
                 // If no servers have been joined yet, then we cant call post, read, choose or reply
                 if (joinedServers.size() == 0){

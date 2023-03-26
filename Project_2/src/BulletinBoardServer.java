@@ -30,12 +30,16 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     public BulletinBoardServer(int serverPort, int serverNum, String hostname, String consistency) throws RemoteException{
         this.serverPort = serverPort;
         this.serverNum = serverNum;
-        coordNum = 5;  // coordinator hard-chosen as highest number for now
+        coordNum = 5;  // coordinator hard-chosen as highest number
         nextID = 1;
         contentTree = new ReferencedTree();
         coordPort = 2004;
         coordHost = "localhost";
-        serverHost = hostname;
+        if (serverNum == 5){
+            serverHost = coordHost;
+        } else {
+            serverHost = hostname;
+        }
         serverList = new ArrayList<>();
         readQuorum = new ArrayList<>();
         writeQuorum = new ArrayList<>();
@@ -303,7 +307,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
             Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), 2004);
             BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
                                                     registry.lookup("BulletinBoardServer_" + 5);
-            //System.out.println("[SERVER]: Server pinged Coordinator. Coordinator is online");
             return true;
         } catch (Exception e){
             return false;
@@ -313,6 +316,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     // Function for client pinging other servers
     public boolean Ping() throws RemoteException {
         try{
+            System.out.println(this.GetServerHost() + " " + this.GetServerPort());
             Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), this.GetServerPort());
             BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
                                                     registry.lookup("BulletinBoardServer_" + this.GetServerNumber());
@@ -320,6 +324,61 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
             return true;
         } catch (Exception e){
             return false;
+        }
+    }
+
+    private static int GetMostRecentArticleID(String articleString){
+        String[] lines = articleString.split("\n");
+        int mostRecentID = -1;
+
+        for (int i = 0; i < lines.length; i++){
+            String line = lines[i].trim();
+            int articleID = Integer.parseInt(line.substring(0, 1));
+            if (articleID > mostRecentID){
+                mostRecentID = articleID;
+            }
+        }
+
+        return mostRecentID;
+    }
+
+    private static void Synch(BulletinBoardServerInterface coordinator){
+        try {
+            // Regularly update the current list of joined servers for the coordinator to keep
+            // track off.
+            Iterator<BulletinBoardServerInterface> it = coordinator.GetServerList().iterator();
+            while (it.hasNext()){
+                BulletinBoardServerInterface serv = it.next();
+                try {
+                    serv.PingCoordinator();
+                } catch (Exception e){
+                    it.remove();
+                }
+            }
+
+            // Get most upto date replica (doesn't always have to be the coordinator)
+            ReferencedTree mostRecentTree = coordinator.GetTree();
+            if (mostRecentTree.ReadTree().length() != 0){
+                int mostRecentID = GetMostRecentArticleID(mostRecentTree.ReadTree());
+                for (BulletinBoardServerInterface serv : coordinator.GetServerList()){
+                    String article = serv.GetTree().ReadTree();
+                    int articleID = GetMostRecentArticleID(article);
+                    if ( articleID > mostRecentID){
+                        mostRecentID = articleID;
+                        mostRecentTree = serv.GetTree();
+                    }
+                }
+            }
+            
+            // Update all servers (including coordinator)
+            coordinator.SetTree(mostRecentTree);
+            for (BulletinBoardServerInterface serv : coordinator.GetServerList()){
+                serv.SetTree(mostRecentTree);
+            }
+            
+        } catch (Exception e){
+            System.out.println("[SERVER]: Ensure coordinator is online. Exiting...");
+            System.exit(0);
         }
     }
 
@@ -394,10 +453,20 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
                     System.out.println("[SERVER]: Please start the coordinator server first.");
                     System.exit(0);
                 }
+            } else {
+                // Is the coordinator
+                // Perform SYNCH operation every 2 seconds to update all servers
+                // with the latest bulletin board.
+                Timer timer = new Timer();
+                TimerTask task = new TimerTask() {
+                    public void run(){
+                        Synch(server);
+                    }
+                };
+                timer.schedule(task, 0, 2000);
             }
             System.out.printf("\n[SERVER]: Bulletin Board Server %d is ready at port %d. \n", serverNum, port);
         } catch(Exception e) {
-            //e.printStackTrace();  // DEBUG
             System.out.println("\n[SERVER]: Error occurred while launching server. It's possible that the port specified is currently in use.");
             System.out.println("[SERVER]: Exiting...");
             System.exit(0);
