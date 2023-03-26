@@ -17,6 +17,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
             try {
                 registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
             } catch (RemoteException e) {
+                System.out.println("[SERVER]: Make sure coordinator is online.");
                 return false;
             }
     
@@ -35,7 +36,6 @@ public class SequentialStrategy implements ConsistencyStrategy {
     
             // is the central server, update self
             int nextID = selfServer.GetCurrID();
-            boolean result = true;
             if (!selfServer.GetTree().AddNode(nextID, article, replyTo)) {
                 System.out.println("[SERVER]: Unable to post article/reply to bulletin board.");
                 return false;  // local update failed, do not update others
@@ -47,13 +47,13 @@ public class SequentialStrategy implements ConsistencyStrategy {
                 ServerToServerInterface peer = (ServerToServerInterface)
                     registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
                 if (!peer.UpdateTree(nextID, article, replyTo)) {
-                    result = false;
+                    System.out.println("[SERVER]: One or more servers have failed to update.");
                 }
             }
             
             selfServer.IncrementID();
             System.out.println("[SERVER]: Write operation was successful!");
-            return result;
+            return true;
         } catch (Exception e){
             System.out.println("[SERVER]: Unable to post article/reply. Please restart the server!");
             return false;
