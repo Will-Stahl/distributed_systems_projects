@@ -78,7 +78,7 @@ Example image below:
 
 <img src="images/run_client.png"  width="60%" height="60%">
 
-# Joining Servers
+### Joining Servers
 
 Before you perform a post, reply, read or choose command, you have to join the server(s) first. Let's assume we have the coordinator server running at port 2004. When prompted to enter a command, type `join: <port_number>` for example to join a server running on port 2000. Note: The "join" command is NOT case sensitive.
 
@@ -108,7 +108,7 @@ Example image below of joining a server and then attempting to join it again:
 
 <img src="images/join_again.png"  width="60%" height="60%">
 
-# Leaving Servers
+### Leaving Servers
 
 You can leave servers at anytime using the `leave: <port_number>` command.
 
@@ -134,7 +134,7 @@ Example of a leave error for when the server itself isn't online:
 
 You will notice the same error message displayed if you attempt to join a server that is NOT online.
 
-# Posting articles
+### Posting articles
 
 Once you have joined any of the 5 live servers, you can begin posting, replying, reading and choosing articles.
 
@@ -156,7 +156,7 @@ Example image of an invalid Post command:
 
 <img src="images/post_invalid.png"  width="60%" height="60%">
 
-# Reading articles
+### Reading articles
 
 The `read` command (not case sensitive) displays the current list of articles on the bulletin board.
 
@@ -178,7 +178,7 @@ Example image below of typing `exit` and hitting "ENTER":
 
 <img src="images/read_exit.png"  width="60%" height="60%">
 
-# Replying to articles
+### Replying to articles
 
 The `read` command above displays article IDs along with the article title and contents. The `reply <Article ID>;<Article Title>;<ArticleContents>` command allows you to reply to specific article IDs that exist on the bulletin board server(s).
 
@@ -198,7 +198,7 @@ Example image of a valid `reply` command but with an invalid article format:
 
 <img src="images/reply_error_2.png"  width="60%" height="60%">
 
-# Choosing articles
+### Choosing articles
 
 The `read` command above displays article IDs along with the article title and contents. The `choose: <Article ID>` command can be used to display the article title and contents associated with an article ID.
 
