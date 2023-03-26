@@ -53,16 +53,19 @@ To test a different consistency, end StartSystem by entering anything. Start bot
 NOTE: Tests may occasionally fail due to connection errors (`java.net.ConnectException: Connection refused`) If this happens, please run them again after restarting `StartSystem`.
 
 ## Design Doc
-### Assumptions/Decisions
+### Assumptions/Decisions/Limitations
 In order to guarantee read-your-writes consistency, we wait to return to the client until its write request has propagated through the Bulletin Board System.
 
 ### Components
+#### Relevant class name
+
+#### Relevant class name
 
 ### Analysis
 For the analysis, we chose to do a theoratical measure of each consistency based on the number of messages sent, from the client's request to the server's official response. We include registry queries (locating, looking up). The number of messages passed assumes the worst case (client did not contact coordinator) where the server responded after successfully completing a non-trivial request.
 
-![Consistency Comparisons](consistency_comp.png)
-![Quorum comparisons for different Nr, Nw](quorum_comp.png)
+<img src="consistency_comp.png"  width="60%" height="60%">
+<img src="quorum_comp.png"  width="60%" height="60%">
 
 ## Testing Description
 One test class exists for each consistency. Each of these classes has a test for basic operations between a client and one server. Expected output is tested for
