@@ -85,6 +85,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         // check for valid IP address
         if (IsValidIPAddress(IP)){
             clients.add(new ClientInfo(IP, Port));
+            clientCount += 1;
             System.out.printf("\n[SERVER]: Added new client with IP: %s, Port: %d\n", IP, Port);
             return true;
         }
@@ -160,7 +161,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     */
     public String Choose(int articleID) throws RemoteException {
         if (articleID < 1) {
-            return "[SERVER] Article ID must be a positive integer.";
+            return "";
         }
         return cStrat.ServerChoose(this, articleID, contentTree);
     }
@@ -316,7 +317,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     // Function for client pinging other servers
     public boolean Ping() throws RemoteException {
         try{
-            System.out.println(this.GetServerHost() + " " + this.GetServerPort());
             Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), this.GetServerPort());
             BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
                                                     registry.lookup("BulletinBoardServer_" + this.GetServerNumber());

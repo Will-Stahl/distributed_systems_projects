@@ -328,6 +328,7 @@ public class BulletinBoardClient {
                 System.out.printf("[CLIENT]: Client at port %d successfully joined server at port %d.\n", clientPort, server.GetServerPort());
                 joinedServers.add(server);
             } else {
+                System.out.printf("[CLIENT]: Not able to currently join the server at port %d.\n", server.GetServerPort());
                 System.out.println("[CLIENT]: It's possible that server capacity has been reached or the IP address provided is invalid or the client is already part of the server.");
             }
         } else {
@@ -375,7 +376,7 @@ public class BulletinBoardClient {
 
     public static void main(String[] args){
         if (args.length != 1){
-            System.out.println("\n[SERVER]: Usage: java BulletinBoardClient <hostname>");
+            System.out.println("\n[CLIENT]: Usage: java BulletinBoardClient <hostname>");
             System.out.println("[CLIENT]: Exiting...");
             System.exit(0);
         }

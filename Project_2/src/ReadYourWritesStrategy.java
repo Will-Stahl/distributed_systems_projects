@@ -82,7 +82,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
         String result = contentTree.GetAtIndex(articleID);
         if (result == null) {
             System.out.println("[SERVER]: Article not found for ID: " + articleID);
-            return "[SERVER]: Article not found for ID: " + articleID;
+            return "";
         }
         return result;
     }

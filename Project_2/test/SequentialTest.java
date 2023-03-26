@@ -36,7 +36,7 @@ public class SequentialTest /*extends Thread*/ {
         // article doesn't exist
         Assert.assertEquals("", server.Read());
         Assert.assertFalse(server.Reply("test;article", 1));
-        Assert.assertEquals(server.Choose(1), "[SERVER]: Article not found for ID: 1");
+        Assert.assertEquals(server.Choose(1), "");
         // now make the article exist
         Assert.assertTrue(server.Publish("test;article"));
         Assert.assertTrue(server.Reply("test;article", 1));

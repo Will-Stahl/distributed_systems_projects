@@ -41,6 +41,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
                 return false;  // local update failed, do not update others
             }
     
+            // Update all the other replicas
             ArrayList<BulletinBoardServerInterface> serverList = selfServer.GetServerList();
             for (BulletinBoardServerInterface replica : serverList){
                 registry =  LocateRegistry.getRegistry(replica.GetServerHost(), replica.GetServerPort());
@@ -51,6 +52,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
                 }
             }
             
+            // Increment the article ID for a subsequent article
             selfServer.IncrementID();
             System.out.println("[SERVER]: Write operation was successful!");
             return true;
@@ -83,7 +85,7 @@ public class SequentialStrategy implements ConsistencyStrategy {
         String result = contentTree.GetAtIndex(articleID);
         if (result == null) {
             System.out.println("[SERVER]: Article not found for ID: " + articleID);
-            return "[SERVER]: Article not found for ID: " + articleID;
+            return "";
         }
         return result;
     }

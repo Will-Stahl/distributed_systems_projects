@@ -44,7 +44,7 @@ public class QuorumStrategy implements ConsistencyStrategy {
             System.out.println("[SERVER]: Write quorum has agreed to post the article.");
 
             // Update other servers
-            Sync(nextID, article, replyTo, coord);
+            SyncReplicas(nextID, article, replyTo, coord);
 
             // Generate new ID for future articles
             coord.IncrementID();
@@ -56,7 +56,7 @@ public class QuorumStrategy implements ConsistencyStrategy {
     }
 
     // Lazily update all read quorum servers
-    public void Sync(int nextID, String article, int replyTo, BulletinBoardServerInterface coord){
+    public void SyncReplicas(int nextID, String article, int replyTo, BulletinBoardServerInterface coord){
         try {
             List<BulletinBoardServerInterface> readQuorum = coord.GetReadQuorum();
             BulletinBoardServerInterface overlappedServer = readQuorum.get(0);
@@ -128,7 +128,7 @@ public class QuorumStrategy implements ConsistencyStrategy {
         try {
             if (selfServer.GetTree().ReadTree().length() == 0){
                 System.out.println("[SERVER]: No articles posted yet on the server.");
-                return "[SERVER]: Article not found for ID: " + articleID;
+                return "";
             }
 
             Registry registry = LocateRegistry.getRegistry(selfServer.GetCoordHost(), selfServer.GetCoordPort());
@@ -165,7 +165,7 @@ public class QuorumStrategy implements ConsistencyStrategy {
         } catch (Exception e){
             System.out.println("[SERVER]: Make sure coordinator is online!");
         }
-        return "[SERVER]: Article not found for ID: " + articleID;
+        return "";
     }
 
 }
