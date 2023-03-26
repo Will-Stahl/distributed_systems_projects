@@ -37,6 +37,7 @@ java BulletinBoardServer localhost 2004 quorum
 ```
 
 Example image below:
+
 <img src="images/run_server.png"  width="60%" height="60%">
 
 Similarly you can use commands `java BulletinBoardServer localhost 2000 readyourwrites`, `java BulletinBoardServer localhost 2000 sequential`, `java BulletinBoardServer localhost 2000 quorum` etc for launching other servers. You can replace 2000 with other valid ports such as 2001, 2002 and 2003 to launch 4 replicas and have the coordinator running on port 2004. Make sure to run the coordinator first before running the other servers as the other servers require the coordinator to be running already. Also all replicas should follow the same consistency pattern. If the replicas' consistency pattern differs from that of the coordinator, then the replicas will automatically shut down and will have to be restarted.
@@ -60,6 +61,7 @@ java BulletinBoardClient localhost
 ```
 
 Example image below:
+
 <img src="images/run_client.png"  width="60%" height="60%">
 
 # Joining Servers
@@ -71,21 +73,25 @@ join: 2004
 ```
 
 Example image below of a successful "join" command request:
+
 <img src="images/join.png"  width="60%" height="60%">
 
 The port number used above can be 2000, 2001, 2002, 2003 and 2004 and you can open extra terminals to join the other servers using any of the valid port numbers.
 
 Example image below:
+
 <img src="images/join_extra.png"  width="60%" height="60%">
 
 If you type any port other than the ones specified above, then you will be prompted to enter another request with a valid port number.
 
 Example image below of a join error:
+
 <img src="images/join_error.png"  width="60%" height="60%">
 
 You cannot join a server again if you are already part of it.
 
 Example image below of joining a server and then attempting to join it again:
+
 <img src="images/join_again.png"  width="60%" height="60%">
 
 # Leaving Servers
@@ -97,11 +103,13 @@ leave: 2004
 ```
 
 Example image below of a successful "leave" command request:
+
 <img src="images/leave.png"  width="60%" height="60%">
 
 Client's cannot leave from servers that they aren't a part off. Attempting to do so will cause the program to prompt the user to enter another command.
 
 Example image below of a leave error:
+
 <img src="images/leave_error_1.png"  width="60%" height="60%">
 
 Clients can connect and disconnect from any LIVE server at any point in time. However, attempting to join or leave a server that hasn't been started yet can cause the program to prompt the user to enter another command.
@@ -131,6 +139,7 @@ Example image of entering a valid Post command after clicking "ENTER":
 The format above is strict. Entering any other format will proceed to display an error in the client terminal and the article will not be published on the Bulletin Board server(s).
 
 Example image of an invalid Post command:
+
 <img src="images/post_invalid.png"  width="60%" height="60%">
 
 # Reading articles
@@ -138,17 +147,21 @@ Example image of an invalid Post command:
 The `read` command (not case sensitive) displays the current list of articles on the bulletin board.
 
 Example image below:
+
 <img src="images/read_success.png"  width="60%" height="60%">
 
 The `read` command only displays 5 articles at once and cuts them short if they are longer than 16 characters. If client(s) have posted more than 5 articles on the bulletin board, then the `read` command allows you to access the "Page viewing" functionality where you can type `next` to read the next page of articles, or `exit` to exit page viewing.
 
 Example image below of the "Page Viewing" function:
+
 <img src="images/read_multiple.png"  width="60%" height="60%">
 
 Example image below of typing `next` and hitting "ENTER":
+
 <img src="images/read_next.png"  width="60%" height="60%">
 
 Example image below of typing `exit` and hitting "ENTER":
+
 <img src="images/read_exit.png"  width="60%" height="60%">
 
 # Replying to articles
@@ -156,16 +169,19 @@ Example image below of typing `exit` and hitting "ENTER":
 The `read` command above displays article IDs along with the article title and contents. The `reply <Article ID>;<Article Title>;<ArticleContents>` command allows you to reply to specific article IDs that exist on the bulletin board server(s).
 
 Example of a valid `reply` command (not case sensitive):
+
 <img src="images/reply_success.png"  width="60%" height="60%">
 
 Attempting to reply with an incorrect ID will result in an error and the reply will not be posted to the server and the client will be prompted to enter another request.
 
 Example image of a `reply` command that leads to an error:
+
 <img src="images/reply_error_1.png"  width="60%" height="60%">
 
 Attempting to reply to a valid ID but with an invalid article format will also result in an error and the reply will not be posted to the server.
 
 Example image of a valid `reply` command but with an invalid article format:
+
 <img src="images/reply_error_2.png"  width="60%" height="60%">
 
 # Choosing articles
@@ -173,11 +189,13 @@ Example image of a valid `reply` command but with an invalid article format:
 The `read` command above displays article IDs along with the article title and contents. The `choose: <Article ID>` command can be used to display the article title and contents associated with an article ID.
 
 Example of a valid `choose` command (not case sensitive):
+
 <img src="images/choose_valid.png"  width="60%" height="60%">
 
 If the article ID being requested does not exist, then an error message is printed in the client terminal and the user will be prompted to enter other commands.
 
 Example image below of an invalid `choose` command:
+
 <img src="images/choose_invalid.png"  width="60%" height="60%">
 
 ## Running Client Side Tests
@@ -193,6 +211,7 @@ java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunClientTes
 ```
 
 Example image of the output when the above command is run:
+
 <img src="images/client_tests.png"  width="60%" height="60%">
 
 ## Running the Server tests
@@ -222,6 +241,7 @@ Example image below of starting the system using Sequential Consistency:
 <img src="images/start_system.png"  width="60%" height="60%">
 
 Example image and output of running the tests with sequential consistency:
+
 <img src="images/sequential_success.png"  width="60%" height="60%">
 
 You can press `ENTER` in the terminal window where you ran the `java StartSystem sequential` system command to terminate the process.
@@ -243,6 +263,7 @@ Example image below of starting the system using Read-Your-Writes Consistency:
 <img src="images/readyourwrites_start.png"  width="60%" height="60%">
 
 Example image and output of running the tests with Read-Your-Writes consistency:
+
 <img src="images/readyourwrites_tests.png"  width="60%" height="60%">
 
 You can press `ENTER` in the terminal window where you ran the `java StartSystem readyourwrites` system command to terminate the process.
@@ -264,6 +285,7 @@ Example image below of starting the system using Quorum Consistency:
 <img src="images/quorum_start.png"  width="60%" height="60%">
 
 Example image and output of running the tests with Quorum consistency:
+
 <img src="images/quorum_success.png"  width="60%" height="60%">
 
 You can press `ENTER` in the terminal window where you ran the `java StartSystem Quorum` system command to terminate the process.
