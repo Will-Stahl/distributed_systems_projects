@@ -6,13 +6,11 @@ import java.util.*;
 
 public class BulletinBoardClient {
     private static ArrayList<BulletinBoardServerInterface> joinedServers;
-    private ArrayList<String> articles;
     private int clientPort;
     private String IP;
 
     public BulletinBoardClient(InetAddress IP) {
         joinedServers = new ArrayList<>();
-        articles = new ArrayList<>();
         clientPort = SetRandomClientPortNumber();
         this.IP = IP.getHostAddress();
     }
@@ -30,12 +28,13 @@ public class BulletinBoardClient {
         System.out.println("Ports currently available to join: 2000, 2001, 2002, 2003 and 2004");
         System.out.println("1. Enter \"Join\" to join the group server.");
         System.out.println("2. Enter \"Leave\" to leave the group server.");
-        System.out.println("3. Enter \"Post\" to post an article.");
+        System.out.println("3. Enter \"Post: <Article Title>;<Article Contents>\" to post an article.");
         System.out.println("4. Enter \"Read\" to read a list of articles.");
         System.out.println("5. Enter \"Choose\" to choose one of the articles and display its contents.");
-        System.out.println("6. Enter \"Reply\" to reply to an existing article (also posts a new article).");
+        System.out.println("6. Enter \"Reply: <Article ID>;<Article Title>;<Article Contents>\" to reply to an existing article (also posts a new article).");
     }
 
+    // Function for accepting and validating client requests
     public String GetAndValidateClientRequest(){
         Scanner sc = new Scanner(System.in);
         String clientRequest = "";
@@ -65,6 +64,11 @@ public class BulletinBoardClient {
         return clientRequest.trim();
     }
 
+    /**
+     * Function for validating a post request from the client
+     * @param lowerCaseRequest: Client request string
+     * @return: boolean value indicating if the request has valid formatting or not.
+     */
     private boolean ValidPostRequest(String lowerCaseRequest) {
         if (!lowerCaseRequest.contains(":")){
             System.out.println("[CLIENT]: Colon missing. Please use \"Post: <Article Title>;<Article Contents>\"");
@@ -82,6 +86,11 @@ public class BulletinBoardClient {
         return ValidArticleFormat(articleString);
     }
 
+    /**
+     * Function for validating a reply request from the client
+     * @param lowerCaseRequest: Client request string
+     * @return: boolean value indicating if the request has valid formatting or not.
+     */
     private boolean ValidReplyRequest(String lowerCaseRequest) {
         if (!lowerCaseRequest.contains(":")){
             System.out.println("[CLIENT]: Colon missing. Please use \"Reply: <Article ID>;<Article Title>;<Article Contents>\"");
@@ -270,10 +279,12 @@ public class BulletinBoardClient {
         }
     }
 
+    // Return list of servers that the client has joined
     public ArrayList<BulletinBoardServerInterface> GetServerList(){
         return joinedServers;
     }
 
+    // Page viewing functionality that allows the client to flip through pages of articles
     private static void HandleResultView(String readResult){
         String[] lines = readResult.split("\n");
 
@@ -310,6 +321,14 @@ public class BulletinBoardClient {
          
     }
 
+    /**
+     * Helper function for validating join and leave requests
+     * @param hostName: Client hostname
+     * @param IP: Client IP address
+     * @param clientPort: Client Port
+     * @param clientRequest: Client request retrieved from the command line
+     * @throws RemoteException
+     */
     private static void HandleJoinOrLeaveRequests(String hostName, String IP, int clientPort, String clientRequest) throws RemoteException{
         String[] parts = clientRequest.split(":");
         String command = parts[0].toLowerCase();
@@ -342,6 +361,7 @@ public class BulletinBoardClient {
         }
     }
 
+    // Function for connecting to a server from a selection of 5 ports.
     private static BulletinBoardServerInterface ConnectToServer(String hostName, int serverPort){
         // Fixed set of ports are mapped to specific server numbers
         HashMap<Integer, Integer> portToServerMap = new HashMap<>();
@@ -363,6 +383,7 @@ public class BulletinBoardClient {
         return null;
     }
 
+    // Function for checking valid server port.
     private static boolean CheckValidPort(int port){
         Set<Integer> ports = new HashSet<>();
         ports.add(2000);

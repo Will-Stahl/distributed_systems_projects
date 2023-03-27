@@ -29,10 +29,10 @@ public class ReadYourWritesTest {
         // article doesn't exist
         Assert.assertEquals("", server.Read());
         Assert.assertFalse(server.Reply("test;article", 1));
-        Assert.assertFalse(server.Reply("test;article", 0));
         Assert.assertEquals("", server.Choose(1));
         Assert.assertEquals("", server.Choose(0));
         Assert.assertEquals("", server.Choose(-1));
+
         // now make the article exist
         Assert.assertTrue(server.Publish("test;article"));
         Assert.assertTrue(server.Reply("test;article", 1));
@@ -41,11 +41,12 @@ public class ReadYourWritesTest {
         Assert.assertEquals("test;article", server.Choose(1));
     }
 
+  
     // check for expected consistency behaviour across multiple servers
     @Test
     public void ChangeServer()
             throws RemoteException, NotBoundException, IOException {
-        
+         
         int serverNumber = 5;  // connect to coordinator
         int serverPort = serverToPortMap[serverNumber];
         Registry reg = LocateRegistry.getRegistry("localhost", serverPort);
@@ -59,8 +60,11 @@ public class ReadYourWritesTest {
         reg = LocateRegistry.getRegistry("localhost", serverPort);
         server = (BulletinBoardServerInterface)
                 reg.lookup("BulletinBoardServer_" + serverNumber);  // connect to 4
+
         server.Publish("test2;article2");  // ID 4
+        
         Assert.assertEquals("test2;article", server.Choose(3));
+         
         Assert.assertEquals("test2;article2", server.Choose(4));
 
         // client writes to a server, it must see its writes on from the others

@@ -1,4 +1,3 @@
-import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -59,6 +58,11 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         }
     }
 
+    /**
+     * Function for registering a client on this server.
+     * @param IP: Client IP address
+     * @param Port: Client Port 
+     */
     public boolean Join(String IP, int Port) throws RemoteException
     {
         if (Port > 65535 || Port < 0) {
@@ -93,6 +97,11 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         return false;
     }
 
+    /**
+     * Function for checking if the client IP address is valid
+     * @param IP
+     * @return
+     */
     private static boolean IsValidIPAddress(String IP) {
         String[] parts = IP.split("\\.");
 
@@ -104,7 +113,12 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         }
         return true;
     }
-    
+
+    /**
+     * Function for de-registering a client from the server.
+     * @param IP: Client IP address
+     * @param Port: Client Port
+     */
     public boolean Leave(String IP, int Port) throws RemoteException{
         // check for subscriber in Subscribers
         ClientInfo clientPtr = null;
@@ -141,7 +155,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
     */
     public boolean Reply(String article, int replyTo) throws RemoteException {
         // same as call to ServerPublish() in Publish(), but with replyTo
-        if (replyTo < 1) {
+        if (replyTo < 0) {
             return false;
         }
         return cStrat.ServerPublish(article, replyTo, this);
@@ -155,7 +169,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         return cStrat.ServerRead(this);
     }
 
-
     /**
      * @param articleID ID of article requested in full
     */
@@ -163,7 +176,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         if (articleID < 1) {
             return "";
         }
-        return cStrat.ServerChoose(this, articleID, contentTree);
+        return cStrat.ServerChoose(this, articleID);
     }
 
 
@@ -206,7 +219,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
      * returns message if article isn't found
      */
     public String CoordinatorChoose(int articleID) throws RemoteException {
-        return cStrat.ServerChoose(this, articleID, contentTree);
+        return cStrat.ServerChoose(this, articleID);
     }
 
     private static boolean CheckValidPort(int port){
@@ -222,6 +235,131 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
 
     public void IncrementID() {
         nextID++;
+    }
+
+    /**
+     * Function for initializing read and write quorums
+     * @param NR: Number of read quorum servers
+     * @param NR: Number of write quorum servers
+     */
+    public void SetQuorums(int NR, int NW){
+        // Add coordinator to server list so that have have Nr + Nw - 1 servers
+        if (!serverList.contains(this)){
+            this.serverList.add(this);
+        }
+        Collections.shuffle(this.serverList);
+
+        this.writeQuorum = new ArrayList<>();
+        this.readQuorum = new ArrayList<>();
+
+        // Add to write quorum after shuffling server list
+        for (int i = 0; i < NW; i++){
+            this.writeQuorum.add(serverList.get(i));
+        }
+
+        // Add to read quorum after shuffling server list
+        for (int i = NW-1; i < NR + NW - 1; i++){
+            this.readQuorum.add(serverList.get(i));
+        }
+    }
+
+    // function for pinging coordinator from other servers
+    public boolean PingCoordinator() throws RemoteException{
+        try{
+            Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), 2004);
+            BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
+                                                    registry.lookup("BulletinBoardServer_" + 5);
+            return true;
+        } catch (Exception e){
+            return false;
+        }
+    }
+
+    // Function for client pinging other servers
+    public boolean Ping() throws RemoteException {
+        try{
+            Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), this.GetServerPort());
+            BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
+                                                    registry.lookup("BulletinBoardServer_" + this.GetServerNumber());
+            System.out.println("[SERVER]: Client pinged server. Server is online.");
+            return true;
+        } catch (Exception e){
+            return false;
+        }
+    }
+
+    /**
+     * Function for finding the most recent ID as that indicates which is the latest article
+     * on the bulletin board.
+     * @param articleString - String representing all the articles in the bulletin board that are separated
+     * by newline characters to account for replies and new posts.
+     * @return - The latest ID
+     */
+    private static int GetMostRecentArticleID(String articleString){
+        // Split article String into individual articles
+        String[] lines = articleString.split("\n");
+        int mostRecentID = -1;
+
+        for (int i = 0; i < lines.length; i++){
+            String line = lines[i].trim();
+
+            // Extract article ID from the article.
+            int articleID = Integer.parseInt(line.substring(0, 1));
+
+            // Update value of most recent article
+            if (articleID > mostRecentID){
+                mostRecentID = articleID;
+            }
+        }
+
+        return mostRecentID;
+    }
+
+    /**
+     * Sync operation called repeatedly in the background to make sure all replicas are upto date.
+     * This function also updates the current list of online servers.
+     * @param coordinator - Coordinator server object for retrieving the current list of online servers
+     */
+    private static void Synch(BulletinBoardServerInterface coordinator){
+        try {
+            // Regularly update the current list of joined servers for the coordinator to keep
+            // track off.
+            Iterator<BulletinBoardServerInterface> it = coordinator.GetServerList().iterator();
+            while (it.hasNext()){
+                BulletinBoardServerInterface serv = it.next();
+                try {
+                    serv.PingCoordinator();
+                } catch (Exception e){
+                    it.remove();
+                }
+            }
+
+            // Get most upto date replica (doesn't always have to be the coordinator)
+            ReferencedTree mostRecentTree = coordinator.GetTree();
+            if (mostRecentTree.ReadTree().length() != 0){
+                int mostRecentID = GetMostRecentArticleID(mostRecentTree.ReadTree());
+
+                // Loop through all replicas to ensure we have the most latest article ID
+                for (BulletinBoardServerInterface serv : coordinator.GetServerList()){
+                    String article = serv.GetTree().ReadTree();
+                    int articleID = GetMostRecentArticleID(article);
+                    if ( articleID > mostRecentID){
+                        mostRecentID = articleID;
+                        mostRecentTree = serv.GetTree();
+                    }
+                }
+            }
+            
+            // Update all servers with the latest bulletin board information (including coordinator)
+            coordinator.SetTree(mostRecentTree);
+            for (BulletinBoardServerInterface serv : coordinator.GetServerList()){
+                serv.SetTree(mostRecentTree);
+            }
+            
+        } catch (Exception e){
+            System.out.println("[SERVER]: Ensure coordinator is online. Exiting...");
+            System.exit(0);
+        }
     }
 
     // =============== getters/setters ==================
@@ -281,107 +419,6 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
         return readQuorum;
     }
 
-    public void SetQuorums(int NR, int NW){
-        // Add coordinator to server list so that have have Nr + Nw - 1 servers
-        if (!serverList.contains(this)){
-            this.serverList.add(this);
-        }
-        Collections.shuffle(this.serverList);
-
-        this.writeQuorum = new ArrayList<>();
-        this.readQuorum = new ArrayList<>();
-
-        // Add to write quorum after shuffling server list
-        for (int i = 0; i < NW; i++){
-            this.writeQuorum.add(serverList.get(i));
-        }
-
-        // Add to read quorum after shuffling server list
-        for (int i = NW-1; i < NR + NW - 1; i++){
-            this.readQuorum.add(serverList.get(i));
-        }
-    }
-
-    // function for pinging coordinator from other servers
-    public boolean PingCoordinator() throws RemoteException{
-        try{
-            Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), 2004);
-            BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
-                                                    registry.lookup("BulletinBoardServer_" + 5);
-            return true;
-        } catch (Exception e){
-            return false;
-        }
-    }
-
-    // Function for client pinging other servers
-    public boolean Ping() throws RemoteException {
-        try{
-            Registry registry = LocateRegistry.getRegistry(this.GetServerHost(), this.GetServerPort());
-            BulletinBoardServerInterface server = (BulletinBoardServerInterface) 
-                                                    registry.lookup("BulletinBoardServer_" + this.GetServerNumber());
-            System.out.println("[SERVER]: Client pinged server. Server is online.");
-            return true;
-        } catch (Exception e){
-            return false;
-        }
-    }
-
-    private static int GetMostRecentArticleID(String articleString){
-        String[] lines = articleString.split("\n");
-        int mostRecentID = -1;
-
-        for (int i = 0; i < lines.length; i++){
-            String line = lines[i].trim();
-            int articleID = Integer.parseInt(line.substring(0, 1));
-            if (articleID > mostRecentID){
-                mostRecentID = articleID;
-            }
-        }
-
-        return mostRecentID;
-    }
-
-    private static void Synch(BulletinBoardServerInterface coordinator){
-        try {
-            // Regularly update the current list of joined servers for the coordinator to keep
-            // track off.
-            Iterator<BulletinBoardServerInterface> it = coordinator.GetServerList().iterator();
-            while (it.hasNext()){
-                BulletinBoardServerInterface serv = it.next();
-                try {
-                    serv.PingCoordinator();
-                } catch (Exception e){
-                    it.remove();
-                }
-            }
-
-            // Get most upto date replica (doesn't always have to be the coordinator)
-            ReferencedTree mostRecentTree = coordinator.GetTree();
-            if (mostRecentTree.ReadTree().length() != 0){
-                int mostRecentID = GetMostRecentArticleID(mostRecentTree.ReadTree());
-                for (BulletinBoardServerInterface serv : coordinator.GetServerList()){
-                    String article = serv.GetTree().ReadTree();
-                    int articleID = GetMostRecentArticleID(article);
-                    if ( articleID > mostRecentID){
-                        mostRecentID = articleID;
-                        mostRecentTree = serv.GetTree();
-                    }
-                }
-            }
-            
-            // Update all servers (including coordinator)
-            coordinator.SetTree(mostRecentTree);
-            for (BulletinBoardServerInterface serv : coordinator.GetServerList()){
-                serv.SetTree(mostRecentTree);
-            }
-            
-        } catch (Exception e){
-            System.out.println("[SERVER]: Ensure coordinator is online. Exiting...");
-            System.exit(0);
-        }
-    }
-
     public static void main(String[] args){
         // If no argument is specified, then print error message and exit
         if (args.length != 3){
@@ -436,7 +473,7 @@ implements BulletinBoardServerInterface, ServerToServerInterface {
                     server.SetTree(coordinator.GetTree());
                     coordinator.AddToServerList(server);
 
-                    // Ping coordinator server
+                    // Ping coordinator server periodically
                     Timer timer = new Timer();
                     TimerTask task = new TimerTask() {
                         public void run(){

@@ -77,11 +77,13 @@ public class SequentialStrategy implements ConsistencyStrategy {
     }
 
     /**
-     * @param articleID article requested by client
-     * @param contentTree article tree from server object that called this
-     * sequential consistency, just read from local
+     * Function which checks if all the read quorum servers agree on the latest value of the article ID being requested
+     * and returns the article title and contents to the client.
+     * @param selfServer: Server object that initally received the choose request from the client
+     * @param articleID: Article ID being requested by the server
      */
-    public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree) {
+    public String ServerChoose(BulletinBoardServer selfServer, int articleID) {
+        ReferencedTree contentTree = selfServer.GetTree();
         String result = contentTree.GetAtIndex(articleID);
         if (result == null) {
             System.out.println("[SERVER]: Article not found for ID: " + articleID);

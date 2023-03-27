@@ -3,6 +3,12 @@ import java.rmi.registry.Registry;
 import java.util.*;
 
 public class ReadYourWritesStrategy implements ConsistencyStrategy {
+    /**
+     * Function for posting articles or replying to existing articles
+     * @param article: Article to be published as a new post or as a reply
+     * @param replyTo: Article ID we want to reply to. If it is 0, then we create a new post
+     * @param selfServer: Server object that initially received the read request from the client.
+     */
     public boolean ServerPublish(String article, int replyTo,
                         BulletinBoardServer selfServer) {
         try{
@@ -30,6 +36,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
                 // Get primary copy of article from coordinator
                 selfServer.SetTree(coord.GetTree());
                 if (!selfServer.UpdateTree(nextID, article, replyTo)) {
+                    System.out.println("[SERVER]: Update operation was unsuccessful!");
                     return false;
                 }
 
@@ -45,6 +52,7 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
                     ServerToServerInterface peer = (ServerToServerInterface)
                         registry.lookup("BulletinBoardServer_" + replica.GetServerNumber());
                     if (!peer.UpdateTree(nextID, article, replyTo)) {
+                        System.out.println("[SERVER]: Its possible some servers are currently offline. Please relaunch them!");
                         return false;
                     }
                 }
@@ -60,10 +68,12 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
     }
 
     /**
-     * @param selfServer server object that called this method
-     * sequential consistency, just read from local
+     * Function for updating all read quorum replicas using the overlapped server and returning a list
+     * of bulletin board articles to the client.
+     * @param selfServer: Function that initally received the read request from the client
      */
     public String ServerRead(BulletinBoardServer selfServer) {
+        // Retrieve all articles defined in the content tree of the server
         String articles = selfServer.GetTree().ReadTree();
         if (articles.length() == 0){
             System.out.println("[SERVER]: No articles posted yet on the server.");
@@ -74,11 +84,14 @@ public class ReadYourWritesStrategy implements ConsistencyStrategy {
     }
 
     /**
-     * @param articleID article requested by client
-     * @param contentTree article tree from server object that called this
-     * sequential consistency, just read from local
+     * Function which checks if all the read quorum servers agree on the latest value of the article ID being requested
+     * and returns the article title and contents to the client.
+     * @param selfServer: Server object that initally received the choose request from the client
+     * @param articleID: Article ID being requested by the server
      */
-    public String ServerChoose(BulletinBoardServer selfServer, int articleID, ReferencedTree contentTree) {
+    public String ServerChoose(BulletinBoardServer selfServer, int articleID) {
+        // Retrieve article corresponding to the given ID
+        ReferencedTree contentTree = selfServer.GetTree();
         String result = contentTree.GetAtIndex(articleID);
         if (result == null) {
             System.out.println("[SERVER]: Article not found for ID: " + articleID);

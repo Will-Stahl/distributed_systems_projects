@@ -39,6 +39,13 @@ public class ReferencedTree implements Serializable {
         }
     }
 
+    /**
+     * Create a deep copy of an existing tree. This is useful when a server joins later during a live
+     * session and needs the most upto date version of the bulletin board.
+     * @param parent - Parent node in the tree which represents an article that has been posted to the
+     * bulletin board.
+     * @param child - Children node representing replies to an article
+     */
     private void createDeepCopy(ReferencedNode parent, ReferencedNode child){
         ReferencedNode node = new ReferencedNode(child.ID, child.article);
         node.children = new ArrayList<ReferencedNode>();
@@ -105,6 +112,7 @@ public class ReferencedTree implements Serializable {
         return result;
     }
 
+    // Retrieve the article for a given ID in constant time
     public String GetAtIndex(int idx) {
         if (directList.size() == 1 || idx >= directList.size()){
             return null;

@@ -8,11 +8,16 @@ Individual Contributions:
     <li> Jashwin Acharya
         <ul>
             <li> Implemented the complete client UI as well as client request validation functions. </li>
-            <li> Implemented all client side unit tests </li>
-            <li> Implemented Read-Your-Writes and Quorum consistency as well as the SYNCH operation in BulletinBoardServer.java </li>
+            <li> Implemented all client side unit tests. </li>
+            <li> Implemented Read-Your-Writes and Quorum consistency as well as the SYNCH operation in BulletinBoardServer.java. </li>
         </ul>
     </li>
     <li> William Stahl
+        <ul>
+            <li> Implemented BulletinBoardServer.java, ReferencedTree.java and SequentialStrategy.java. </li>
+            <li> Implemented all server side tests in Quorum Test.java, SequentialTest.java and ReadYourWritesTest.java. </li>
+            <li> Performed policy analyses for all 3 consistencies as well as for different NR and NW values for the Quorum policy.</li>
+        </ul>
     </li>
 </ul>
 
@@ -198,6 +203,12 @@ Example image of a valid `reply` command but with an invalid article format:
 
 <img src="images/reply_error_2.png"  width="60%" height="60%">
 
+If you type something like `reply 0;title;contents`, then this command creates a new post on the bulletin board since the article ID is 0.
+
+Example image below:
+
+<img src="images/reply_0.png"  width="60%" height="60%">
+
 ### Choosing articles
 
 The `read` command above displays article IDs along with the article title and contents. The `choose: <Article ID>` command can be used to display the article title and contents associated with an article ID.
@@ -211,6 +222,8 @@ If the article ID being requested does not exist, then an error message is print
 Example image below of an invalid `choose` command:
 
 <img src="images/choose_invalid.png"  width="60%" height="60%">
+
+<b>IMPORTANT NOTE:</b> While a client is communicating with multiple servers and one of the server goes offline, there's a good chance that if the client sends a request following the event, it will take 1-2 seconds for the client to filter out the offline server from its list of joined servers, and will then send its request to a random live server. We haven't included any network delay between clients and servers or between servers themselves, but this slight natural delay can occur when a client is communicating with multiple servers at once.
 
 ## Running Client Side Tests
 
@@ -229,6 +242,8 @@ Example image of the output when the above command is run:
 <img src="images/client_tests.png"  width="60%" height="60%">
 
 ## Running the Server tests
+
+Testing description details are at the bottom of the README file in the Design Doc section.
 
 NOTE: Make sure no other terminal windows are open in the `src` directory where any of the servers are running. Please make sure to close those terminal windows if they are open before executing the below tests, since it can cause the below tests to fail.
 
@@ -258,9 +273,11 @@ Example image and output of running the tests with sequential consistency:
 
 <img src="images/sequential_success.png"  width="60%" height="60%">
 
-You can press `ENTER` in the terminal window where you ran the `java StartSystem sequential` system command to terminate the process.
+You can press `ENTER` in the terminal window where you ran the `java StartSystem sequential` system command to terminate the process and start it again with a different consistency.
 
-Once the sequential consistency tests are run, close the terminal windows where you executed the above 2 commands and then relaunch two new terminal windows in the same `test` folder to run the Read-Your-Writes tests. This is an important step, so please don't miss this.
+This is what should happen after clicking `ENTER`:
+
+<img src="images/test_enter.png"  width="60%" height="60%">
 
 Example commands for read-your-writes consistency:
 
@@ -280,9 +297,7 @@ Example image and output of running the tests with Read-Your-Writes consistency:
 
 <img src="images/readyourwrites_tests.png"  width="60%" height="60%">
 
-You can press `ENTER` in the terminal window where you ran the `java StartSystem readyourwrites` system command to terminate the process.
-
-Once the read-your-writes consistency tests are run, close the terminal windows where you executed the above 2 commands and then relaunch two new terminal windows in the same `test` folder to run the Quorum tests. This is an important step, so please don't miss this.
+You can press `ENTER` in the terminal window where you ran the `java StartSystem readyourwrites` system command to terminate the process and start it again with a different consistency.
 
 Example commands for quorum consistency:
 
@@ -304,13 +319,15 @@ Example image and output of running the tests with Quorum consistency:
 
 You can press `ENTER` in the terminal window where you ran the `java StartSystem Quorum` system command to terminate the process.
 
-IMPORTANT NOTE: There is a slight degree of randomness associated with our server tests for the "quorum" consistency which we were not able to find the root cause for. If the quorum tests do fail, then please close all terminals and relaunch two fresh terminal windows in the `test` directory and run the above 2 commands (`java StartSystem sequential` and `java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTestClass sequential`) again to run the tests. We weren't encountering any issues during manual testing, but our unit tests sometimes fail for quorum consistency. Again, this is a slightly random thing that happens and the tests are expected to run and execute correctly 95% of the time. Tests may also occasionally fail due to connection errors (`java.net.ConnectException: Connection refused`) If this happens, please run them again after restarting `StartSystem`.
+<b>IMPORTANT NOTE:</b> There is a slight degree of randomness associated with our server tests for the "quorum" consistency which we were not able to find the root cause for. If the quorum tests do fail, then please close all terminals and relaunch two fresh terminal windows in the `test` directory and run the above 2 commands (`java StartSystem sequential` and `java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTestClass sequential`) again to run the tests. We weren't encountering any issues during manual testing, but our unit tests sometimes fail for quorum consistency. Again, this is a slightly random thing that happens and the tests are expected to run and execute correctly 95% of the time. Tests may also occasionally fail due to connection errors (`java.net.ConnectException: Connection refused`) If this happens, please run them again after restarting `StartSystem`.
 
 ## Design Doc
 
 ### Assumptions/Decisions/Limitations
 
 In order to guarantee read-your-writes consistency, we wait to return to the client until its write request has propagated through the Bulletin Board System.
+
+Further limitations are discussed in detail in the next section.
 
 ### Components
 
@@ -320,9 +337,9 @@ An instance of this class is a remote object on which the client invokes remote 
 
 For our project, we decided to keep the number of servers at 5 since we did not want to burden system resources by having more than 5 servers continuously communicating with one another as well as with multiple clients. Each server internally can also have a max number of 5 clients join them at once for similar aforementioned reasons. One limitation here is that there is no way for our server to know if a client has died as the Server interfaces we have defined only return values. Thus if a client goes offline before leaving a server, then the server will not be able to update its list of currently joined clients and there could be offline client objects taking up space in the list. A simple fix for this is to simply relaunch all the active servers. All 5 servers are assigned fixed ports (valid ports are 2000, 2001, 2002, 2003 and 2004) and the central server by default always runs on the local host on port 2004.
 
-We have also added a "Timer" class variable on line 441 in BulletinBoardServer.java that allows our other 4 servers (or replicas) to continuously ping the coordinator to ensure that it is live and running. Once the coordinate server is offline, then the other replicas automatically disconnect too since we don't have a leader election algorithm in place to assign central server duties to another server. Another reason for having the other replicas shut down when the coordinator dies is that the coordinator is the central point of contact for all our consistency strategies, which we go into more detail later in this document. We decided to invoke this Timer function every 1 second to ensure that the server's are always aware when the coordinator is down since we are continuously exchanging information between servers.
+We have also added a "Timer" class variable on line 478 in BulletinBoardServer.java that allows our other 4 servers (or replicas) to continuously ping the coordinator to ensure that it is live and running. Once the coordinate server is offline, then the other replicas automatically disconnect too since we don't have a leader election algorithm in place to assign central server duties to another server. Another reason for having the other replicas shut down when the coordinator dies is that the coordinator is the central point of contact for all our consistency strategies, which we go into more detail later in this document. We decided to invoke this Timer function every 1 second to ensure that the server's are always aware when the coordinator is down since we are continuously exchanging information between servers.
 
-We have an additional "Timer" variable defined at line 460 in BulletinBoardServer.java that repeatedly calls our "Synch" function every 2 seconds to ensure that all servers are updated with the latest bulletin board information by fetching data from the server that contains the most recent article ID. Whenever a replica goes offline while communicating with a client and comes back online later, it is initally updated with the bulletin board server information that the coordinator holds and our "Synch" function makes sure the replica is updated again with the most latest information in-case the coordinator doesn't have the latest bulletin board information. The "Synch" function also keeps track of a list of available servers and removes server objects that are offline to ensure that we don't end up trying to Ping a server whose object is not available. We decided on a 2 second repeat time interval to ensure that the server list is regularly updated with live server objects to not cause issues later on when servers start to communicate with one another.
+We have an additional "Timer" variable defined at line 498 in BulletinBoardServer.java that repeatedly calls our "Synch" function every 2 seconds to ensure that all servers are updated with the latest bulletin board information by fetching data from the server that contains the most recent article ID. Whenever a replica goes offline while communicating with a client and comes back online later, it is initally updated with the bulletin board server information that the coordinator holds and our "Synch" function makes sure the replica is updated again with the most latest information in-case the coordinator doesn't have the latest bulletin board information. The "Synch" function also keeps track of a list of available servers and removes server objects that are offline to ensure that we don't end up trying to Ping a server whose object is not available. We decided on a 2 second repeat time interval to ensure that the server list is regularly updated with live server objects to not cause issues later on when servers start to communicate with one another.
 
 #### ConsistencyStrategy
 
@@ -330,7 +347,7 @@ This is an interface through which the strategy pattern is implemented, allowing
 
 #### ReferencedTree
 
-This is where the actual content of the bulletin board is stored. Each node of the tree is an article, and the tree structure makes for easy tracking of replies and replies to replies. An `ArrayList` also maintains direct references to each node in order to avoid searching the tree for a specific article ID (indexed by ID).
+This is where the actual content of the bulletin board is stored. Each node of the tree is an article, and the tree structure makes for easy tracking of replies and replies to replies. An `ArrayList` also maintains direct references to each node in order to avoid searching the tree for a specific article ID (indexed by ID). One important thing to note here is that if a person attempts to reply to ID 0, then that will create a new post on the bulletin board.
 
 #### Sequential Strategy Implementation
 
