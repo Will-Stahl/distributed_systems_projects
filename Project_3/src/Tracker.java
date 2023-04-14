@@ -8,7 +8,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     private static int serverPort = 8000;
     // TODO: data structure to store known files, their locations, and their checksums
     // TODO: data structure to store joined peers
-
+    
     public Tracker() throws RemoteException {}
     
     public boolean Join(String IP, int Port, int machID) throws RemoteException {
