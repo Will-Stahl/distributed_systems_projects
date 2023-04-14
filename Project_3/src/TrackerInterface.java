@@ -10,7 +10,7 @@ public interface TrackerInterface extends Remote {
     public boolean Leave(String IP, int Port) throws RemoteException;
 
     // return list of nodes that contain argument file
-    public ArrayList Find(String fname) throws RemoteException;
+    public ArrayList<TrackedPeer> Find(String fname) throws RemoteException;
 
     // peer node calls this on tracker to send its updated list
     public boolean UpdateList(ArrayList<String> fnames) throws RemoteException;

@@ -6,8 +6,10 @@ import java.util.*;
 
 public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     private static int serverPort = 8000;
-    // TODO: data structure to store known files, their locations, and their checksums
     // TODO: data structure to store joined peers
+    private static ArrayList<TrackedPeer> peerInfo;
+    // known files and their locations, must be checked when peer unreachable!
+    private static HashMap<String, ArrayList> fileMap;
 
     public Tracker() throws RemoteException {}
     
@@ -21,12 +23,25 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
         return true;
     }
 
-    public ArrayList Find(String fname) throws RemoteException {
+    public ArrayList<TrackedPeer> Find(String fname) throws RemoteException {
+        ArrayList ids;
+        if (ids = fileMap.get(fname) == null) {  // no attached peer has it
+            return null;
+        }
+        ArrayList<TrackedPeer> answer = new ArrayList<TrackedPeer>();
+        for (int nodeID : ids) {
+            answer.add(peerInfo.get())
+        }
         return null;
     }
 
     public boolean UpdateList(ArrayList<String> fnames) throws RemoteException {
         return false;
+    }
+
+    private void removeNode(int machID) {
+        // TODO: remove from both data structures
+        // remove file from hashmap if no ids attached
     }
 
     public static void main(String[] args){
