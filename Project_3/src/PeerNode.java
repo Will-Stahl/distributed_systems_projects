@@ -6,9 +6,13 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.InvalidPathException;
 import java.util.*;
 
 public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
+    private static String dirPath;
     private static String IP;
     private static int port;
     private static int machID;
@@ -22,8 +26,34 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         return 0;
     }
 
-    private static String Download(String fname) {
-        return "";
+    /**
+     * call on peer that has already been selected, is RMI
+     * calculates checksum and returns it
+     */
+    public FileDownload Download(String fname) throws RemoteException {
+        // TODO: do all this but in dispatched thread? (no locking needed for reading)
+        String contents;
+        try {
+            contents = new String(Files.readAllBytes(Paths.get(dirPath + fname)));
+        }
+        catch (IOException|SecurityException|InvalidPathException e) {
+            System.out.println("[PEER]: Peer requested non-present file: "
+                + fname + " or permissions/IO error");
+            return null;
+        }
+        return new FileDownload(contents);
+    }
+
+    /**
+     * peer side logic of determining which client to download from
+     * tries best client, then next-best as fault tolerance
+     * does NOT use Find(), as that is a separate operation, call it before
+     *      ^may refactor where this uses Find as well as or instead of above
+     * @param fname name of file searching for
+     */
+    private static boolean DownloadAsClient(String fname) {
+        // TODO: call GetLoad() on candidate peers from lowest to highest latency
+        return false;
     }
 
     // Function for setting a random port number
@@ -140,15 +170,21 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         String[] parts = request.split(":");
         String fname = parts[1].trim();
         if (parts[0].trim().equalsIgnoreCase("find")){
+            ArrayList<TrackedPeer> answer = null;
             try {
-                server.Find(fname);
-                // TODO: check if returns null, where file is inaccessible
-                System.out.println("[PEER]: FOUND FILE");
+                answer = server.Find(fname);
             } catch (Exception e){
                 System.out.println("[PEER]: It's possible that the server is currently offline. Try again later.");
+                return;  // return due to exception
             }
+            if (answer == null) {  // return since nobody has it
+                System.out.println("[PEER]: No peers found with file");
+                return;
+            }
+            System.out.println("[PEER]: FOUND FILE");
         } else {
-            Download(fname);
+            DownloadAsClient(fname);  // calls Find() on tracker, Download() on peer
+            // TODO: check result
         }
     }
 
@@ -159,7 +195,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
      */
     private static boolean ScanFiles() {
         try {
-            File dir = new File("files/mach" + machID);
+            File dir = new File(dirPath);
             for (File f : dir.listFiles()) {
                 fnames.add(f.getName());
             }
@@ -169,7 +205,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         }
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) throws RemoteException {
         if (args.length != 2){
             System.out.println("\n[PEER]: Usage: java PeerNode <hostname> <machID>");
             System.out.println("[PEER]: Exiting...");
@@ -189,7 +225,19 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         // Join server as soon as node boots up
         serverHostname = args[0];
         port = GetRandomPortNumber();
+        // TODO: create registry at port
         HandleJoinAndLeave("join");
+
+        dirPath = "files/mach" + machID;
+        fnames = new ArrayList<String>();
+        if (!ScanFiles()) {
+            String msg = "[PEER]: Failed to scan directory. Check that src/files/mach";
+            msg += machID + " exists with the correct permissions.";
+            System.out.println(msg);
+            server.Leave(machID);
+            System.exit(0);
+        }
+        // TODO: call UpdateList() on tracker
 
         // Thread for sending peer requests to the tracking server
         new Thread(new Runnable(){
@@ -200,13 +248,5 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 }
             }
         }).start();
-        /* 
-        fnames = new ArrayList<String>();
-        if (!ScanFiles()) {
-            String msg = "[PEER]: Failed to scan directory. Check that src/files/mach";
-            msg += machID + " exists with the correct permissions.";
-            System.out.println(msg);
-            System.exit(0);
-        }*/
     }
 }

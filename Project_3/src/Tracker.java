@@ -8,8 +8,8 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     private static int serverPort = 8000;
     // data structure to store joined peers
     private static ArrayList<TrackedPeer> peerInfo;
-    // known files and their locations, must be checked when peer unreachable!
-    private static HashMap<String, HashSet<Integer>> fileMap;  // generic set for int
+    // known files and their locations
+    private static HashMap<String, HashSet<Integer>> fileMap;
 
     public Tracker() throws RemoteException {
         fileMap = new HashMap<String, HashSet<Integer>>();
@@ -57,6 +57,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     public ArrayList<TrackedPeer> Find(String fname) throws RemoteException {
         HashSet<Integer> ids = fileMap.get(fname);
         if (ids == null) {  // no attached peer has it
+            System.out.println("[SERVER]: not tracking requested file");
             return null;
         }
         ArrayList<TrackedPeer> answer = new ArrayList<TrackedPeer>();
