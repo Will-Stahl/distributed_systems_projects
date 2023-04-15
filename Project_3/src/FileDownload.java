@@ -6,18 +6,18 @@ import java.util.zip.CRC32;
  * has simulation method to randomly add noise to download
  */
 public class FileDownload {
-    String contents;
+    byte[] contents;
     long checksum;
 
-    public FileDownload(String fContent) {
+    public FileDownload(byte[] fContent) {
         contents = fContent;
-        byte[] bytes = contents.getBytes();
         CRC32 crc = new CRC32();
-        crc.update(bytes);  // computes checksum
+        crc.update(contents);  // computes checksum
         checksum = crc.getValue();  // store checksum value
+        addNoise();
     }
 
-    public String GetContents() {
+    public byte[] GetContents() {
         return contents;
     }
 
@@ -26,10 +26,13 @@ public class FileDownload {
      * false if they don't match
      */
     public boolean Checksum() {
-        byte[] bytes = contents.getBytes();
         CRC32 crc = new CRC32();
-        crc.update(bytes);  // computes checksum
+        crc.update(contents);  // computes checksum
         return (crc.getValue() == checksum);
+    }
+
+    private void addNoise() {
+        // TODO: randomly change a random bit/byte
     }
 
 }

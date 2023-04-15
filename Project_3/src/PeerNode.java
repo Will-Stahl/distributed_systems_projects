@@ -6,9 +6,11 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.File;
 import java.io.IOException;
+import java.rmi.NotBoundException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.InvalidPathException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 
 public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
@@ -16,14 +18,15 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
     private static String IP;
     private static int port;
     private static int machID;
-    private static ArrayList<String> fnames;
+    private static ArrayList<String> fnames;  // TODO: make thread-safe
     private static TrackerInterface server;
     private static String serverHostname;
+    private static AtomicInteger numTasks;  // thread safe measure of load
 
     public PeerNode() throws RemoteException {}
     
     public int GetLoad() throws RemoteException {
-        return 0;
+        return numTasks.get();
     }
 
     /**
@@ -31,28 +34,100 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
      * calculates checksum and returns it
      */
     public FileDownload Download(String fname) throws RemoteException {
-        // TODO: do all this but in dispatched thread? (no locking needed for reading)
-        String contents;
+        numTasks.incrementAndGet();  // must cleanup before every return
+        byte[] contents;
         try {
-            contents = new String(Files.readAllBytes(Paths.get(dirPath + fname)));
+            contents = Files.readAllBytes(Paths.get(dirPath + fname));
         }
         catch (IOException|SecurityException|InvalidPathException e) {
             System.out.println("[PEER]: Peer requested non-present file: "
                 + fname + " or permissions/IO error");
+            numTasks.decrementAndGet();  // cleanup
             return null;
         }
+        numTasks.decrementAndGet();
+        // limitation: transmission takes time and occurs after load decremented
         return new FileDownload(contents);
     }
 
     /**
      * peer side logic of determining which client to download from
-     * tries best client, then next-best as fault tolerance
-     * does NOT use Find(), as that is a separate operation, call it before
-     *      ^may refactor where this uses Find as well as or instead of above
+     * tries best peer up to 2 times if checksum fails or RemoteException
+     * moves on to next best peer if previous fails
      * @param fname name of file searching for
      */
     private static boolean DownloadAsClient(String fname) {
-        // TODO: call GetLoad() on candidate peers from lowest to highest latency
+        numTasks.incrementAndGet();  // must cleanup before every return
+
+        ArrayList<TrackedPeer> candidates = null;
+        try {
+            candidates = server.Find(fname);
+        } catch (RemoteException e) {
+            // careful to decrement thread-shared variable
+            numTasks.decrementAndGet();
+            return false;
+        }
+        ArrayList<PeerNodeInterface> refs = new ArrayList<PeerNodeInterface>();
+        int[] loadOrder = new int[candidates.size()];
+        for (TrackedPeer candidate : candidates) {
+            try {
+                PeerNodeInterface ref = candidate.SetAndGetReference();
+                int ping = ref.GetLoad()/** TODO: times latency */;
+                candidate.SetPing(ping);
+            } catch (NotBoundException|RemoteException e) {
+                candidate = null;
+            }
+        }
+        while (candidates.remove(null));  // remove all nulls
+        candidates.sort(new ComparePeer());
+
+        for (TrackedPeer candidate : candidates) {
+
+            // attempt to recover from various failure cases
+            PeerNodeInterface ref = null;
+            FileDownload dl = null;
+            try {
+                ref = candidate.SetAndGetReference();
+                dl = ref.Download(fname);
+            } catch (NotBoundException e) {
+                continue;  // move on
+            } catch (RemoteException f) {
+                // try one more time
+                try {
+                    ref.Download(fname);
+                } catch (RemoteException g) {
+                    System.out.println("[PEER]: failed to download from peer "
+                                            + candidate.GetID());
+                    continue;  // move on from twice-failed peer
+                }
+            }
+
+            if (dl == null) {
+                continue;  // peer didn't have it
+            }
+
+            try {
+                if (!dl.Checksum()) {  // if checksum fails
+                    dl = ref.Download(fname);  // try same peer again
+                }
+                if (!dl.Checksum()) {  // if it breaks again
+                    continue;  // move on from this peer
+                }
+
+                // it worked if you get here, save the file
+                Files.write(Paths.get(dirPath + fname), dl.GetContents());
+                numTasks.decrementAndGet();
+                return true;
+            } catch (RemoteException e) {
+                continue;
+            } catch (IOException f) {
+                System.out.println("[PEER]: error when writing to file");
+                numTasks.decrementAndGet();
+                return false;
+            }
+        }
+
+        numTasks.decrementAndGet();
         return false;
     }
 
@@ -225,7 +300,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         // Join server as soon as node boots up
         serverHostname = args[0];
         port = GetRandomPortNumber();
-        // TODO: create registry at port
         HandleJoinAndLeave("join");
 
         dirPath = "files/mach" + machID;
@@ -237,7 +311,17 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             server.Leave(machID);
             System.exit(0);
         }
-        // TODO: call UpdateList() on tracker
+        numTasks = new AtomicInteger(0);
+        // TODO: create registry at port
+        Registry registry = LocateRegistry.createRegistry(port);
+        registry.rebind("mach" + machID, this);
+
+        try {  // call UpdateList() on tracker
+            server.UpdateList(fnames, machID);
+        } catch (RemoteException e) {
+            // shouldn't really get here if previous calls succeeded
+            System.exit(0);
+        }
 
         // Thread for sending peer requests to the tracking server
         new Thread(new Runnable(){
