@@ -40,7 +40,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     public boolean Leave(int machID) throws RemoteException {
         if (peerInfo.get(machID) == null){
             System.out.printf("[SERVER]: Process with ID %d was not joined.\n", machID); 
-        return false;  // node wasn't joined
+            return false;  // node wasn't joined
         } else {
             removeNode(machID);
             System.out.printf("[SERVER]: Removed node with ID: %d\n", machID);
@@ -124,8 +124,6 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
             Registry registry = LocateRegistry.createRegistry(serverPort);
             registry.rebind("TrackingServer", server);
             System.out.printf("\n[SERVER]: Tracking Server is ready at port %d. \n", serverPort);
-
-            Timer timer = new Timer();
         } catch (Exception e){
             System.out.println("\n[SERVER]: Error occurred while launching server. It's possible that the port specified is currently in use.");
             System.out.println("[SERVER]: Exiting...");
