@@ -6,42 +6,117 @@ import java.util.*;
 
 public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     private static int serverPort = 8000;
-    // TODO: data structure to store joined peers
+    // data structure to store joined peers
     private static ArrayList<TrackedPeer> peerInfo;
     // known files and their locations, must be checked when peer unreachable!
-    private static HashMap<String, ArrayList> fileMap;
+    private static HashMap<String, HashSet<Integer>> fileMap;  // generic set for int
 
-    public Tracker() throws RemoteException {}
-    
+    public Tracker() throws RemoteException {
+        fileMap = new HashMap<String, HashSet<Integer>>();
+        peerInfo = new ArrayList<TrackedPeer>();
+    }
+
+
+    /**
+     * Gets peer info tracked in tracker process
+     * @param IP ip address of peer
+     * @param Port port of peer process
+     * @param machID peer's assigned unique machine ID
+     */
     public boolean Join(String IP, int Port, int machID) throws RemoteException {
-        // TODO: Distinguish between clients using machID and don't add duplicate clients
+        for (TrackedPeer peer : peerInfo) {
+            if (peer.GetID() == machID) {
+                System.out.printf("[SERVER]: Process with ID %d has already joined.\n", machID); 
+                return false; 
+            }
+        }
+        peerInfo.add(new TrackedPeer(machID, Port, IP));
         System.out.printf("[SERVER]: Added peer node at IP: %s and Port: %d.\n", IP, Port);
         return true;
     }
 
-    public boolean Leave(String IP, int Port) throws RemoteException {
-        return true;
+    public boolean Leave(int machID) throws RemoteException {
+        for (TrackedPeer peer : peerInfo) {
+            if (peer.GetID() == machID) {
+                // files become inaccessible through this node
+                removeNode(machID);
+                System.out.printf("[SERVER]: Removed node with ID: %d\n", machID);
+                return true;
+            }
+        }
+        System.out.printf("[SERVER]: Process with ID %d was not joined.\n", machID); 
+        return false;  // node wasn't joined
     }
 
+    /**
+     * returns list of clients that have the requested file
+     * null if tracker has no knowledge of file
+     * does NOT check if peer is joined, as this function does not affect state
+     * @param fname filename peer is seeking
+     */
     public ArrayList<TrackedPeer> Find(String fname) throws RemoteException {
-        ArrayList ids;
-        if (ids = fileMap.get(fname) == null) {  // no attached peer has it
+        HashSet<Integer> ids = fileMap.get(fname);
+        if (ids == null) {  // no attached peer has it
             return null;
         }
         ArrayList<TrackedPeer> answer = new ArrayList<TrackedPeer>();
-        for (int nodeID : ids) {
-            answer.add(peerInfo.get())
+        for (Integer nodeID : ids) {
+            answer.add(peerInfo.get(nodeID.intValue()));
         }
-        return null;
+        return answer;
     }
 
-    public boolean UpdateList(ArrayList<String> fnames) throws RemoteException {
-        return false;
+    /**
+     * peer calls this on coordinator to update its respective file info
+     * assumes that node calling has joined
+     * @param fnames ArrayList of all file names that are shareable from peer
+     * @param machID unique ID of peer, assuming no byzantine failures
+     */
+    public boolean UpdateList(ArrayList<String> fnames, int machID) throws RemoteException {
+        if (!isJoined(machID)) {
+            return false;  // this node isn't joined by ID
+        }
+        peerInfo.get(machID).SetFiles(fnames);
+        for (String fname : fnames) {
+            if (!fileMap.containsKey(fname)) {  // add filename as key
+                HashSet<Integer> newSet = new HashSet<Integer>();
+                newSet.add(Integer.valueOf(machID));
+                fileMap.put(fname, newSet);
+            }
+            else {  // key into structure, add machID if not already present
+                fileMap.get(fname).add(Integer.valueOf(machID));  // vals of map are a set
+            }
+        }
+        return true;
     }
 
     private void removeNode(int machID) {
-        // TODO: remove from both data structures
-        // remove file from hashmap if no ids attached
+        TrackedPeer removing = peerInfo.get(machID);
+        peerInfo.remove(machID);
+
+        // for all file names associated with machID
+        for (String fname : removing.GetFiles()) {
+            // remove machID from fileMap
+            if (fileMap.containsKey(fname)) {
+                // fileMap should always contain it, but check
+                fileMap.get(fname).remove(Integer.valueOf(machID));
+                // machID should exist in that set, but okay if not
+            }
+
+            // if machID was only node associated with the file, remove it
+            if (fileMap.get(fname).isEmpty()) {
+                fileMap.remove(fname);
+            }
+        }
+    }
+
+    private static boolean isJoined(int peerID) {
+        for (TrackedPeer peer : peerInfo) {
+            if (peer.GetID() == peerID) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static void main(String[] args){

@@ -1,3 +1,4 @@
+import java.util.*;
 
 /**
  * tracks peer info for nodes that server believes are up
@@ -22,8 +23,15 @@ public class TrackedPeer {
         this.files = files;
     }
 
-    public TrackedPeer GetCopy() {
-        return new TrackedPeer(id, port, addr, files.clone());
+    // public TrackedPeer GetCopy() {
+    //     return new TrackedPeer(id, port, addr, files.clone());
+    // }
+
+    /**
+     * override files with argument array
+     */
+    public void SetFiles(ArrayList<String> fnames) {
+        this.files = fnames;
     }
 
     public int GetID() {

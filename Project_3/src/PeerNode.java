@@ -119,7 +119,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                     throw new RemoteException();
                 }
             } else {
-                boolean isLeaveSuccess = server.Leave(IP, port);
+                boolean isLeaveSuccess = server.Leave(machID);
                 if (isLeaveSuccess){
                     System.out.println("[PEER]: Successfully disconnected from server at port 8000");
                 } else {
@@ -142,6 +142,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         if (parts[0].trim().equalsIgnoreCase("find")){
             try {
                 server.Find(fname);
+                // TODO: check if returns null, where file is inaccessible
                 System.out.println("[PEER]: FOUND FILE");
             } catch (Exception e){
                 System.out.println("[PEER]: It's possible that the server is currently offline. Try again later.");
@@ -177,11 +178,11 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
 
         try {
             machID = Integer.parseInt(args[1]);
-            if (machID <= 0){
+            if (machID < 0){
                 throw new RemoteException();
             }
         } catch (Exception e){
-            System.out.println("[PEER]: Mach ID must be a number greater than 0.");
+            System.out.println("[PEER]: Mach ID must be a number greater than or equal to 0.");
             System.exit(0);
         }
 
