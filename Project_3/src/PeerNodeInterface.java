@@ -7,4 +7,6 @@ public interface PeerNodeInterface extends Remote {
 
     // TODO: Can probably leave this as a private static function, but not sure
     public FileDownload Download(String fname) throws RemoteException;
+
+    public void Ping() throws RemoteException;
 }

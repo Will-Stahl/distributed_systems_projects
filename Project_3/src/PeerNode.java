@@ -1,5 +1,4 @@
 import java.net.InetAddress;
-import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -49,6 +48,8 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         // limitation: transmission takes time and occurs after load decremented
         return new FileDownload(contents);
     }
+
+    public void Ping() throws RemoteException{}
 
     /**
      * peer side logic of determining which client to download from
@@ -220,19 +221,23 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 boolean isJoinSuccess = server.Join(IP, port, machID);
                 if (isJoinSuccess){
                     System.out.println("[PEER]: Connected to server at port 8000.");
+                    
+                    // Update server with all files associated with this client
+                    server.UpdateList(fnames, machID);
                 } else {
-                    throw new RemoteException();
+                    System.out.println("[PEER]: Already part of the tracker server.");
                 }
             } else {
                 boolean isLeaveSuccess = server.Leave(machID);
                 if (isLeaveSuccess){
                     System.out.println("[PEER]: Successfully disconnected from server at port 8000");
                 } else {
-                    throw new RemoteException();
+                    System.out.println("[PEER]: Currently not part of the tracker server. Please enter \"join\" first");
                 }
             }
             
         } catch (Exception e){
+            e.printStackTrace();
             System.out.println("[PEER]: It's possible that the server is currently offline. Try joining or leaving later.");
         }
     }
@@ -247,18 +252,19 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         if (parts[0].trim().equalsIgnoreCase("find")){
             ArrayList<TrackedPeer> answer = null;
             try {
-                answer = server.Find(fname);
+                //answer = server.Find(fname);
+                if (answer == null) {  // return since nobody has it
+                    System.out.println("[PEER]: No peers found with file");
+                    return;
+                } else {
+                    System.out.println("[PEER]: FOUND FILE");
+                }
             } catch (Exception e){
                 System.out.println("[PEER]: It's possible that the server is currently offline. Try again later.");
                 return;  // return due to exception
             }
-            if (answer == null) {  // return since nobody has it
-                System.out.println("[PEER]: No peers found with file");
-                return;
-            }
-            System.out.println("[PEER]: FOUND FILE");
         } else {
-            DownloadAsClient(fname);  // calls Find() on tracker, Download() on peer
+            //DownloadAsClient(fname);  // calls Find() on tracker, Download() on peer
             // TODO: check result
         }
     }
@@ -280,6 +286,10 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         }
     }
 
+    private static boolean ValidateMachID(){
+        return (0 <= machID && machID <= 4);
+    }
+
     public static void main(String[] args) throws RemoteException {
         if (args.length != 2){
             System.out.println("\n[PEER]: Usage: java PeerNode <hostname> <machID>");
@@ -289,18 +299,23 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
 
         try {
             machID = Integer.parseInt(args[1]);
+
+            if (!ValidateMachID()){
+                System.out.println("[PEER]: MachID can only have a value 0, 1, 2, 3 or 4");
+                System.out.println("[PEER]: Exiting...");
+                System.exit(0);
+            }
             if (machID < 0){
                 throw new RemoteException();
             }
         } catch (Exception e){
-            System.out.println("[PEER]: Mach ID must be a number greater than or equal to 0.");
+            System.out.println("[PEER]: MachID can only have a value 0, 1, 2, 3 or 4.");
             System.exit(0);
         }
 
         // Join server as soon as node boots up
         serverHostname = args[0];
         port = GetRandomPortNumber();
-        HandleJoinAndLeave("join");
 
         dirPath = "files/mach" + machID;
         fnames = new ArrayList<String>();
@@ -312,16 +327,20 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             System.exit(0);
         }
         numTasks = new AtomicInteger(0);
-        // TODO: create registry at port
-        Registry registry = LocateRegistry.createRegistry(port);
-        registry.rebind("mach" + machID, this);
 
+        // TODO: Might need to refactor this 
+        Registry registry = LocateRegistry.createRegistry(port);
+        //registry.rebind("mach" + machID, this);
+
+        /* 
         try {  // call UpdateList() on tracker
             server.UpdateList(fnames, machID);
         } catch (RemoteException e) {
             // shouldn't really get here if previous calls succeeded
             System.exit(0);
-        }
+        }*/
+        
+        HandleJoinAndLeave("join");
 
         // Thread for sending peer requests to the tracking server
         new Thread(new Runnable(){
