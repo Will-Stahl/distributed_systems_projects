@@ -4,6 +4,8 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.io.File;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.rmi.NotBoundException;
 import java.nio.file.Files;
@@ -17,6 +19,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
     private static String IP;
     private static int port;
     private static int machID;
+    private static int[][] latencies;
     private static ArrayList<String> fnames;  // TODO: make thread-safe
     private static TrackerInterface server;
     private static String serverHostname;
@@ -290,6 +293,30 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         return (0 <= machID && machID <= 4);
     }
 
+    public static boolean ScanLatencies(String cfname) {
+        // read file by lines
+        int maxSupported = 10;  // depends on #lines in static config files
+        // technically floor(squrt(num_lines))
+        List<String> entries = null;
+        try {
+            entries = Files.readAllLines(Paths.get(cfname));
+        } catch (IOException e) {
+            return false;
+        }
+        latencies = new int[maxSupported][maxSupported];
+
+        // make symmetric
+        for (int i = 0; i < maxSupported; i++) {
+            for (int j = i; j < maxSupported; j++) {
+                int latency = Integer.parseInt(
+                    entries.get((i * maxSupported) + j));
+                latencies[j][i] = latency;
+                latencies[i][j] = latency;
+            }
+        }
+        return true;
+    }
+
     public static void main(String[] args) throws RemoteException {
         if (args.length != 2){
             System.out.println("\n[PEER]: Usage: java PeerNode <hostname> <machID>");
@@ -330,6 +357,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
 
         // TODO: Might need to refactor this 
         Registry registry = LocateRegistry.createRegistry(port);
+        // TODO: call ScanLatencies("files/static_latencies.txt")
         //registry.rebind("mach" + machID, this);
 
         /* 
