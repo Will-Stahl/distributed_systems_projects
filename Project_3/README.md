@@ -19,6 +19,7 @@ java Tracker
 ```
 
 Example image below:
+
 <img src="images/run_server.png"  width="60%" height="60%">
 
 ## Running clients and using client UI
@@ -36,11 +37,13 @@ java PeerNode localhost 0
 ```
 
 Example image below:
+
 <img src="images/run_client.png"  width="60%" height="60%">
 
 The above command has the format `java PeerNode <server host name> <machID>`. You can only assign a value of 0, 1, 2, 3 or 4 to the machID. Any other machID produces an error and you will have to run the command again using a valid machID.
 
 Example image below of using an incorrect machID:
+
 <img src="images/run_client_error.png"  width="60%" height="60%">
 
 ### Joining the tracker server
@@ -48,16 +51,19 @@ Example image below of using an incorrect machID:
 The peers automatically join the tracking server when they are first launched, but in the event that the server goes down and the client wants to join again, they can simply enter `join` in the client UI.
 
 Example image below:
+
 <img src="images/join_tracker.png"  width="60%" height="60%">
 
 A peer cannot join the tracker server if it's already part of it.
 
 Example image below:
+
 <img src="images/join_again_error.png"  width="60%" height="60%">
 
 Every peer needs to have a different machID before attempting to join the server. Launching two peers with the same machID causes the peer that was launched at a later time to exit gracefully.
 
 Example image below:
+
 <img src="images/join_machID_error.png"  width="60%" height="60%">
 
 ### Leaving the tracker server
@@ -65,9 +71,11 @@ Example image below:
 A client can leave the tracker server at any time by entering `leave` in their respective client UI terminal.
 
 Example image below:
+
 <img src="images/leave_success.png"  width="60%" height="60%">
 
 A client cannot leave the tracker server if it was never part of it.
 
 Example image below:
+
 <img src="images/leave_error.png"  width="60%" height="60%">
