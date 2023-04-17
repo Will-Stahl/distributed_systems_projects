@@ -52,9 +52,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         return new FileDownload(contents);
     }
 
-    public void Ping() throws RemoteException{
-        System.out.println("Pinged!!!");
-    }
+    public void Ping() throws RemoteException{}
 
     /**
      * peer side logic of determining which client to download from
@@ -223,7 +221,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             server = (TrackerInterface) registry.lookup("TrackingServer");
 
             if (request.toLowerCase().startsWith("join")){
-
                 // Ensure that each peer is run with its own unique ID
                 try {
                     PeerNodeInterface node = (PeerNodeInterface) registry.lookup("Peer_" + machID);
