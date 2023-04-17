@@ -58,14 +58,14 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     public ArrayList<TrackedPeer> Find(String fname) throws RemoteException {
         HashSet<Integer> ids = fileMap.get(fname);
         if (ids == null) {  // no attached peer has it
-            System.out.println("[SERVER]: not tracking requested file");
+            System.out.println("[SERVER]: Not currently tracking requested file");
             return null;
         }
-        ArrayList<TrackedPeer> answer = new ArrayList<TrackedPeer>();
+        ArrayList<TrackedPeer> answers = new ArrayList<TrackedPeer>();
         for (Integer nodeID : ids) {
-            answer.add(peerInfo.get(nodeID.intValue()));
+            answers.add(peerInfo.get(nodeID.intValue()));
         }
-        return answer;
+        return answers;
     }
 
     /**
@@ -133,7 +133,8 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
                                     if (peerInfo.get(i) != null){
                                         PeerNodeInterface peer = (PeerNodeInterface) registry.lookup("Peer_" + i);
                                         peer.Ping();
-                                        System.out.printf("[SERVER]: Peer with MachID = %d is online!\n", i);
+                                        // TODO: Uncomment once done with debugging.
+                                        //System.out.printf("[SERVER]: Peer with MachID = %d is online!\n", i);
                                     }
                                 } catch (Exception e){
                                     // If the peer is offline, then set the object value to null

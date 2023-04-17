@@ -255,18 +255,31 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         String[] parts = request.split(":");
         String fname = parts[1].trim();
         if (parts[0].trim().equalsIgnoreCase("find")){
-            ArrayList<TrackedPeer> answer = null;
             try {
-                //answer = server.Find(fname);
-                if (answer == null) {  // return since nobody has it
+                ArrayList<TrackedPeer> answers = server.Find(fname);
+                if (answers == null) {  // return since nobody has it
                     System.out.println("[PEER]: No peers found with file");
                     return;
                 } else {
-                    System.out.println("[PEER]: FOUND FILE");
+                    // TODO: Might have to refactor this a bit
+                    String findSuccessString = "[PEER]: Found file at nodes: ";
+                    String checkSumsString = "[PEER]: Checksums = ";
+                    for (int i = 0; i < answers.size(); i++){
+                        TrackedPeer peer = answers.get(i);
+                        HashMap<String, Long> checkSumMap = peer.GetCheckSums();
+                        findSuccessString += peer.GetID();
+                        checkSumsString += checkSumMap.get(fname);
+                        if (i != answers.size() - 1){
+                            findSuccessString += ",";
+                            checkSumsString += ",";
+                        }
+                    }
+                    System.out.println(findSuccessString);
+                    System.out.println(checkSumsString);
                 }
             } catch (Exception e){
+                e.printStackTrace();
                 System.out.println("[PEER]: It's possible that the server is currently offline. Try again later.");
-                return;  // return due to exception
             }
         } else {
             //DownloadAsClient(fname);  // calls Find() on tracker, Download() on peer

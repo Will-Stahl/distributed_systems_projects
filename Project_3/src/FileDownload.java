@@ -14,11 +14,15 @@ public class FileDownload {
         CRC32 crc = new CRC32();
         crc.update(contents);  // computes checksum
         checksum = crc.getValue();  // store checksum value
-        addNoise();
+        //addNoise();
     }
 
     public byte[] GetContents() {
         return contents;
+    }
+
+    public long GetChecksum(){
+        return checksum;
     }
 
     /**
