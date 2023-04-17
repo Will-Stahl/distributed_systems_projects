@@ -52,7 +52,9 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         return new FileDownload(contents);
     }
 
-    public void Ping() throws RemoteException{}
+    public void Ping() throws RemoteException{
+        System.out.println("Pinged!!!");
+    }
 
     /**
      * peer side logic of determining which client to download from
@@ -150,14 +152,14 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         System.out.println("4. Enter \"Download: <File Name>\" to download a file from a peer.");
     }
 
-    private static void SendClientRequestToServer(){
+    private static void SendClientRequestToServer(PeerNode peer){
         Scanner sc = new Scanner(System.in);
         while(true){
             System.out.println("\n[PEER]: Enter command: ");
             String request = sc.nextLine();
             
             if (request.equalsIgnoreCase("join") || request.equalsIgnoreCase("leave")){
-                HandleJoinAndLeave(request);
+                peer.HandleJoinAndLeave(request);
             } else if (request.contains(":")) {
                 String[] parts = request.split(":");
                 parts[0] = parts[0].trim().toLowerCase();
@@ -212,7 +214,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
      * Function for handling join and leave requests
      * @param request: Request string entered by the peer node in the command line.
      */
-    private static void HandleJoinAndLeave(String request){
+    public void HandleJoinAndLeave(String request){
         try {
             // Initialize peer IP address and port number
             IP = InetAddress.getLocalHost().getHostAddress();
@@ -221,12 +223,24 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             server = (TrackerInterface) registry.lookup("TrackingServer");
 
             if (request.toLowerCase().startsWith("join")){
+
+                // Ensure that each peer is run with its own unique ID
+                try {
+                    PeerNodeInterface node = (PeerNodeInterface) registry.lookup("Peer_" + machID);
+                    node.Ping();
+                    System.out.println("[PEER]: MachID is currently in use. Please try another machID at runtime.");
+                    System.exit(0);
+                } catch (Exception e){}
+
                 boolean isJoinSuccess = server.Join(IP, port, machID);
                 if (isJoinSuccess){
                     System.out.println("[PEER]: Connected to server at port 8000.");
                     
                     // Update server with all files associated with this client
                     server.UpdateList(fnames, machID);
+
+                    // Register this peer object on the server's registry
+                    registry.rebind("Peer_" + machID, this);
                 } else {
                     System.out.println("[PEER]: Already part of the tracker server.");
                 }
@@ -240,7 +254,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             }
             
         } catch (Exception e){
-            e.printStackTrace();
             System.out.println("[PEER]: It's possible that the server is currently offline. Try joining or leaving later.");
         }
     }
@@ -340,8 +353,10 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             System.exit(0);
         }
 
-        // Join server as soon as node boots up
+        // Save server host name for subsequent client communication
         serverHostname = args[0];
+
+        // Join server as soon as node boots up
         port = GetRandomPortNumber();
 
         dirPath = "files/mach" + machID;
@@ -356,7 +371,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         numTasks = new AtomicInteger(0);
 
         // TODO: Might need to refactor this 
-        Registry registry = LocateRegistry.createRegistry(port);
+        //Registry registry = LocateRegistry.createRegistry(port);
         // TODO: call ScanLatencies("files/static_latencies.txt")
         //registry.rebind("mach" + machID, this);
 
@@ -368,14 +383,15 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             System.exit(0);
         }*/
         
-        HandleJoinAndLeave("join");
+        PeerNode peer = new PeerNode();
+        peer.HandleJoinAndLeave("join");
 
         // Thread for sending peer requests to the tracking server
         new Thread(new Runnable(){
             @Override
             public void run(){
                 while(true){
-                    SendClientRequestToServer();
+                    SendClientRequestToServer(peer);
                 }
             }
         }).start();

@@ -1,3 +1,4 @@
+import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -124,6 +125,27 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
             Registry registry = LocateRegistry.createRegistry(serverPort);
             registry.rebind("TrackingServer", server);
             System.out.printf("\n[SERVER]: Tracking Server is ready at port %d. \n", serverPort);
+
+            // Periodically ping every peer node that is currently online
+            Timer timer = new Timer();
+                TimerTask task = new TimerTask() {
+                    public void run(){
+                            for (int i = 0; i < peerInfo.size(); i++){
+                                try {
+                                    if (peerInfo.get(i) != null){
+                                        PeerNodeInterface peer = (PeerNodeInterface) registry.lookup("Peer_" + i);
+                                        peer.Ping();
+                                        System.out.printf("[SERVER]: Peer with MachID = %d is online!", i);
+                                    }
+                                } catch (Exception e){
+                                    // If the peer is offline, then set the object value to null
+                                    peerInfo.set(i, null);
+                                }
+                            }
+                    }
+                };
+            timer.schedule(task, 0, 2000);
+
         } catch (Exception e){
             System.out.println("\n[SERVER]: Error occurred while launching server. It's possible that the port specified is currently in use.");
             System.out.println("[SERVER]: Exiting...");
