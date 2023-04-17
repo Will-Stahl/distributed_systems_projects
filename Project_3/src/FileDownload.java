@@ -1,4 +1,5 @@
 import java.util.zip.CRC32;
+import java.util.Random;
 
 /**
  * instances of this class are passed from p2p as file downloads
@@ -36,7 +37,12 @@ public class FileDownload {
     }
 
     private void addNoise() {
-        // TODO: randomly change a random bit/byte
+        Random rand = new Random();
+        int corrupt = rand.nextInt(10000);  // corrupt 1 of every 10 KB
+        if (corrupt < contents.length) {
+            contents[corrupt]++;
+            // this should cause checksum failure
+        }
     }
 
 }

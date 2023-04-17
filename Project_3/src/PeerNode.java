@@ -72,7 +72,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             return false;
         }
         ArrayList<PeerNodeInterface> refs = new ArrayList<PeerNodeInterface>();
-        int[] loadOrder = new int[candidates.size()];
         for (TrackedPeer candidate : candidates) {
             try {
                 PeerNodeInterface ref = candidate.SetAndGetReference();
