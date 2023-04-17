@@ -221,14 +221,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             server = (TrackerInterface) registry.lookup("TrackingServer");
 
             if (request.toLowerCase().startsWith("join")){
-                // Ensure that each peer is run with its own unique ID
-                try {
-                    PeerNodeInterface node = (PeerNodeInterface) registry.lookup("Peer_" + machID);
-                    node.Ping();
-                    System.out.println("[PEER]: MachID is currently in use. Please try another machID at runtime.");
-                    System.exit(0);
-                } catch (Exception e){}
-
                 boolean isJoinSuccess = server.Join(IP, port, machID);
                 if (isJoinSuccess){
                     System.out.println("[PEER]: Connected to server at port 8000.");
@@ -350,8 +342,17 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             System.exit(0);
         }
 
-        // Save server host name for subsequent client communication
+        // Save server host name for subsequent peer communication
         serverHostname = args[0];
+
+        // Ensure that each peer is run with its own unique ID
+        try {
+            Registry registry = LocateRegistry.getRegistry(serverHostname, 8000);
+            PeerNodeInterface node = (PeerNodeInterface) registry.lookup("Peer_" + machID);
+            node.Ping();
+            System.out.println("[PEER]: MachID is currently in use. Please try another machID at runtime.");
+            System.exit(0);
+        } catch (Exception e){}
 
         // Join server as soon as node boots up
         port = GetRandomPortNumber();

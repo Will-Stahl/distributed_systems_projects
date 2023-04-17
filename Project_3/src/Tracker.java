@@ -103,10 +103,8 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
             // remove machID from fileMap
             if (fileMap.containsKey(fname)) {
                 // fileMap should always contain it, but check
-                System.out.println("HERE!!");
                 fileMap.get(fname).remove(Integer.valueOf(machID));
                 // machID should exist in that set, but okay if not
-                System.out.println(fname);
             }
 
             // if machID was only node associated with the file, remove it
@@ -135,7 +133,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
                                     if (peerInfo.get(i) != null){
                                         PeerNodeInterface peer = (PeerNodeInterface) registry.lookup("Peer_" + i);
                                         peer.Ping();
-                                        System.out.printf("[SERVER]: Peer with MachID = %d is online!", i);
+                                        System.out.printf("[SERVER]: Peer with MachID = %d is online!\n", i);
                                     }
                                 } catch (Exception e){
                                     // If the peer is offline, then set the object value to null
