@@ -5,12 +5,15 @@ import java.lang.ProcessBuilder;
 import java.io.IOException;
 import java.io.File;
 import java.io.PrintWriter;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 
 
 public class SystemTests {
     private static ArrayList<Process> peers;
     private static Process tracker;
 
+    // called for every test
     public SystemTests() {
         peers = new ArrayList<Process>();
         if (!startSystem()) {
@@ -70,18 +73,24 @@ public class SystemTests {
     }
 
     @Test
-    public void TestName() throws InterruptedException {
-        System.out.println("test test antered");
+    public void TestName() throws InterruptedException, IOException {
+        System.out.println("test entered");
         PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
         writer.print("try something\n");
         writer.print("try something\n");
         writer.print("try something\n");
         writer.flush();
         writer.close();
-        Thread.sleep(500);
-        Scanner reader = new Scanner(peers.get(0).getInputStream());
-        while (reader.hasNextLine()) {
-            System.out.println(reader.nextLine());
+        BufferedReader reader = new BufferedReader(new InputStreamReader(peers.get(0).getInputStream()));
+        String ln;
+        while ((ln = reader.readLine()) != null) {
+            System.out.println(ln);
+        }
+
+        for (Process p : peers) {
+            if (!p.isAlive()) {
+                System.out.println(peers.indexOf(p) + " died");
+            }
         }
 
         killSystem();
