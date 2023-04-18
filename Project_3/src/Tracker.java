@@ -6,7 +6,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
 public class Tracker extends UnicastRemoteObject implements TrackerInterface {
-    private static int serverPort = 8000;
+    // port# like 8000 is too likely to be used by someone else on lab machine
+    private static int serverPort = 11396;
 
     // data structure to store joined peers
     private static ArrayList<TrackedPeer> peerInfo;
@@ -121,6 +122,11 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
         try{
             TrackerInterface server = new Tracker();
             Registry registry = LocateRegistry.createRegistry(serverPort);
+            for (int i = 0; i < 5; i++) {
+                try {
+                    registry.unbind("Peer_" + i);
+                } catch (Exception e) {}
+            }
             registry.rebind("TrackingServer", server);
             System.out.printf("\n[SERVER]: Tracking Server is ready at port %d. \n", serverPort);
 

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 
 public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
+    private static int trackerPort = 11396;
     private static String dirPath;
     private static String IP;
     private static int port;
@@ -216,13 +217,13 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             // Initialize peer IP address and port number
             IP = InetAddress.getLocalHost().getHostAddress();
 
-            Registry registry = LocateRegistry.getRegistry(serverHostname, 8000);
+            Registry registry = LocateRegistry.getRegistry(serverHostname, trackerPort);
             server = (TrackerInterface) registry.lookup("TrackingServer");
 
             if (request.toLowerCase().startsWith("join")){
                 boolean isJoinSuccess = server.Join(IP, port, machID);
                 if (isJoinSuccess){
-                    System.out.println("[PEER]: Connected to server at port 8000.");
+                    System.out.println("[PEER]: Connected to server at port " + trackerPort);
                     
                     // Update server with all files associated with this client
                     server.UpdateList(fnames, machID);
@@ -235,7 +236,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             } else {
                 boolean isLeaveSuccess = server.Leave(machID);
                 if (isLeaveSuccess){
-                    System.out.println("[PEER]: Successfully disconnected from server at port 8000");
+                    System.out.println("[PEER]: Successfully disconnected from server at port " + trackerPort);
                 } else {
                     System.out.println("[PEER]: Currently not part of the tracker server. Please enter \"join\" first");
                 }
@@ -283,6 +284,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         } else {
             //DownloadAsClient(fname);  // calls Find() on tracker, Download() on peer
             // TODO: check result
+            // server.UpdateList(fnames, machID);
         }
     }
 
@@ -292,6 +294,9 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
      * false if OS failures
      */
     private static boolean ScanFiles() {
+        if (System.getProperty("user.dir").endsWith("test")) {
+            dirPath = "../src/files/mach" + machID;
+        }  // invoked from test directory
         try {
             File dir = new File(dirPath);
             for (File f : dir.listFiles()) {
@@ -299,6 +304,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             }
             return true;
         } catch (SecurityException e) {
+            System.out.println();
             return false;
         }
     }
@@ -359,10 +365,11 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
 
         // Ensure that each peer is run with its own unique ID
         try {
-            Registry registry = LocateRegistry.getRegistry(serverHostname, 8000);
+            Registry registry = LocateRegistry.getRegistry(serverHostname, trackerPort);
             PeerNodeInterface node = (PeerNodeInterface) registry.lookup("Peer_" + machID);
             node.Ping();
-            System.out.println("[PEER]: MachID is currently in use. Please try another machID at runtime.");
+            System.out.printf("[PEER]: MachID %d is currently in use. Please try another machID at runtime.\n",
+                    machID);
             System.exit(0);
         } catch (Exception e){}
 

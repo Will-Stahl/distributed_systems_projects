@@ -12,6 +12,7 @@ import java.io.BufferedReader;
 public class SystemTests {
     private static ArrayList<Process> peers;
     private static Process tracker;
+    private static Thread stopper;
 
     // called for every test
     public SystemTests() {
@@ -19,6 +20,15 @@ public class SystemTests {
         if (!startSystem()) {
             System.out.println("processes failed to start, tests will fail");
         }
+
+        stopper = new Thread(new Runnable(){
+            @Override
+            public void run(){
+                Scanner ender = new Scanner(System.in);
+                ender.nextLine();
+                killSystem();
+            }
+        }).start();
 
     }
 
@@ -72,26 +82,53 @@ public class SystemTests {
         }
     }
 
+    /**
+     * basic tests for Find() on a vanilla system
+     */
     @Test
-    public void TestName() throws InterruptedException, IOException {
-        System.out.println("test entered");
+    public void TestFind() throws InterruptedException, IOException {
         PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
-        writer.print("try something\n");
-        writer.print("try something\n");
-        writer.print("try something\n");
-        writer.flush();
-        writer.close();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(peers.get(0).getInputStream()));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    peers.get(0).getInputStream()));
         String ln;
-        while ((ln = reader.readLine()) != null) {
-            System.out.println(ln);
+        if (!tracker.isAlive()) {  // some reason this makes it work
+            System.out.println("Tracker not up");
         }
 
-        for (Process p : peers) {
-            if (!p.isAlive()) {
-                System.out.println(peers.indexOf(p) + " died");
-            }
+        writer.print("find:file0.txt\n");
+        writer.flush();
+        for (int i = 0; i < 3; i++) {
+            reader.readLine();
         }
+        Assert.assertEquals("[PEER]: Found file at nodes: 0", reader.readLine());
+
+        writer.print("find:file1.txt\n");
+        writer.flush();
+        // for (int i = 0; i < 1; i++) {
+        //     reader.readLine();
+        // }
+        Assert.assertEquals("[PEER]: Found file at nodes: 1", reader.readLine());
+
+        writer.print("find:file2.txt\n");
+        writer.flush();
+        for (int i = 0; i < 1; i++) {
+            reader.readLine();
+        }
+        Assert.assertEquals("[PEER]: Found file at nodes: 2", reader.readLine());
+
+        writer.print("find:file3.txt\n");
+        writer.flush();
+        for (int i = 0; i < 1; i++) {
+            reader.readLine();
+        }
+        Assert.assertEquals("[PEER]: Found file at nodes: 3", reader.readLine());
+
+        writer.print("find:file4.txt\n");
+        writer.flush();
+        for (int i = 0; i < 1; i++) {
+            reader.readLine();
+        }
+        Assert.assertEquals("[PEER]: Found file at nodes: 4", reader.readLine());
 
         killSystem();
     }
