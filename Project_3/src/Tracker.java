@@ -9,6 +9,8 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     // port# like 8000 is too likely to be used by someone else on lab machine
     private static int serverPort = 11396;
 
+    private static Registry registry;
+
     // data structure to store joined peers
     private static ArrayList<TrackedPeer> peerInfo;
     // known files and their locations
@@ -121,7 +123,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     public static void main(String[] args){
         try{
             TrackerInterface server = new Tracker();
-            Registry registry = LocateRegistry.createRegistry(serverPort);
+            registry = LocateRegistry.createRegistry(serverPort);
             for (int i = 0; i < 5; i++) {
                 try {
                     registry.unbind("Peer_" + i);

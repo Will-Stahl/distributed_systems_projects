@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
+import java.io.File;
 
 
 public class SystemTests {
@@ -21,14 +22,14 @@ public class SystemTests {
             System.out.println("processes failed to start, tests will fail");
         }
 
-        stopper = new Thread(new Runnable(){
-            @Override
-            public void run(){
-                Scanner ender = new Scanner(System.in);
-                ender.nextLine();
-                killSystem();
-            }
-        }).start();
+        // stopper = new Thread(new Runnable(){
+        //     @Override
+        //     public void run(){
+        //         Scanner ender = new Scanner(System.in);
+        //         ender.nextLine();
+        //         killSystem();
+        //     }
+        // }).start();
 
     }
 
@@ -98,37 +99,94 @@ public class SystemTests {
         writer.print("find:file0.txt\n");
         writer.flush();
         for (int i = 0; i < 3; i++) {
-            reader.readLine();
+            System.out.println(reader.readLine());
         }
         Assert.assertEquals("[PEER]: Found file at nodes: 0", reader.readLine());
 
         writer.print("find:file1.txt\n");
         writer.flush();
-        // for (int i = 0; i < 1; i++) {
-        //     reader.readLine();
-        // }
+        for (int i = 0; i < 3; i++) {
+            reader.readLine();
+        }
         Assert.assertEquals("[PEER]: Found file at nodes: 1", reader.readLine());
 
         writer.print("find:file2.txt\n");
         writer.flush();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 3; i++) {
             reader.readLine();
         }
         Assert.assertEquals("[PEER]: Found file at nodes: 2", reader.readLine());
 
         writer.print("find:file3.txt\n");
         writer.flush();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 3; i++) {
             reader.readLine();
         }
         Assert.assertEquals("[PEER]: Found file at nodes: 3", reader.readLine());
 
         writer.print("find:file4.txt\n");
         writer.flush();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 3; i++) {
             reader.readLine();
         }
         Assert.assertEquals("[PEER]: Found file at nodes: 4", reader.readLine());
+
+        killSystem();
+    }
+
+    /**
+     * basic download test that checks folder for whether file was downloaded
+     * calls resetFiles() to ensure clear file system
+     */
+    @Test
+    public void TestDownload() throws InterruptedException, IOException {
+        resetFiles();
+
+        PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
+
+        writer.print("download:file4.txt\n");
+        writer.flush();
+
+        String contentsA, contentsB;
+        contentsA = new String(Files.readAllBytes(Paths.get(
+                "../src/files/mach0/file4.txt")));
+        contentsB = new String(Files.readAllBytes(Paths.get(
+                "../src/files/mach4/file4.txt")));  // read from original dir
+        Assert.assertEquals(contentsB, contentsA);
+
+        killSystem();
+    }
+
+    /**
+     * checks that files are shareable from peer after downloading
+     * checks that Find displays new sharer of file
+     * checks that Download works even when original holder is down
+     */
+    public void CheckShare() {
+        resetFiles();
+
+        PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    peers.get(1).getInputStream()));  // peer 1 looks for file2.txt
+
+        writer.print("download:file2.txt\n");
+        writer.flush();
+
+        for (int i = 0; i < 3; i++) {
+            System.out.println(reader.readLine());
+        }
+        Assert.assertEquals("[PEER]: Found file at nodes: 0, 2", reader.readLine());
+        writer = new PrintWriter(peers.get(1).getOutputStream());
+        peers.get(2).destroy();  // only leave peer 0 to share this
+        writer.print("download:file2.txt\n");
+        writer.flush();
+
+        String contentsA, contentsB;
+        contentsA = new String(Files.readAllBytes(Paths.get(
+                "../src/files/mach2/file2.txt")));  // read from original dir
+        contentsB = new String(Files.readAllBytes(Paths.get(
+                "../src/files/mach1/file2.txt")));  // should be in this dir
+        Assert.assertEquals(contentsB, contentsA);
 
         killSystem();
     }

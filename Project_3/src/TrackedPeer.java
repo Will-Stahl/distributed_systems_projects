@@ -48,9 +48,17 @@ public class TrackedPeer implements Serializable {
             return reference;
         }
         Registry registry = LocateRegistry.getRegistry(addr, port);
-        reference = (PeerNodeInterface) registry.lookup("mach" + id);
+        reference = (PeerNodeInterface) registry.lookup("mach_" + id);
         return reference;
     }
+
+    // public PeerNodeInterface GetReference() {
+    //     return reference;
+    // }
+
+    // public void SetReference(PeerNodeInterface reference) {
+    //     this.reference = reference;
+    // }
 
     /**
      * override files with argument array

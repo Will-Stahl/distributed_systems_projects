@@ -75,6 +75,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         ArrayList<PeerNodeInterface> refs = new ArrayList<PeerNodeInterface>();
         for (TrackedPeer candidate : candidates) {
             try {
+                // TODO: refactor to get reference from registry on tracker's machine
                 PeerNodeInterface ref = candidate.SetAndGetReference();
                 int ping = ref.GetLoad()/** TODO: times latency */;
                 candidate.SetPing(ping);
@@ -281,10 +282,25 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 e.printStackTrace();
                 System.out.println("[PEER]: It's possible that the server is currently offline. Try again later.");
             }
-        } else {
-            //DownloadAsClient(fname);  // calls Find() on tracker, Download() on peer
-            // TODO: check result
-            // server.UpdateList(fnames, machID);
+        } else {  // ====== DOWNLOAD ========
+            // try {
+            //     if (!DownloadAsClient(fname)) {
+            //         throw RemoteException;
+            //     }
+            // } catch (RemoteException e) {
+            //     System.out.printf(
+            //             "[PEER]: Failed to download %s. There may be no available peers with this file\n",
+            //             fname);
+            //     return;
+            // }
+            // fnames.add(fname);
+            // try {
+            //     server.UpdateList(fnames, machID);
+            // } catch (RemoteException e) {
+            //     System.out.println(
+            //             "[PEER]: Failed to notify tracker of new file");
+            // }
+            // uncomment above when ready
         }
     }
 
