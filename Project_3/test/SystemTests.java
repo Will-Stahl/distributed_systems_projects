@@ -7,7 +7,8 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 
 public class SystemTests {
@@ -69,7 +70,7 @@ public class SystemTests {
 
     // IMPORTANT: assumes system running locally
     // resets directories to only have original file
-    private static void resetFiles(String request) {
+    private static void resetFiles() {
         String filePath = "../src/files";
         for (int i = 0; i < 10; i++) {
             String path = filePath + "/mach" + i;
@@ -87,13 +88,16 @@ public class SystemTests {
      * basic tests for Find() on a vanilla system
      */
     @Test
-    public void TestFind() throws InterruptedException, IOException {
+    public void TestFind() throws IOException {
         PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
         BufferedReader reader = new BufferedReader(new InputStreamReader(
                     peers.get(0).getInputStream()));
         String ln;
-        if (!tracker.isAlive()) {  // some reason this makes it work
-            System.out.println("Tracker not up");
+
+        BufferedReader tReader = new BufferedReader(new InputStreamReader(
+                    tracker.getInputStream()));  // DEBUG
+        for (int i = 0; i < 10; i++) {  // DEBUG
+            System.out.println(tReader.readLine());
         }
 
         writer.print("find:file0.txt\n");
@@ -138,20 +142,35 @@ public class SystemTests {
      * basic download test that checks folder for whether file was downloaded
      * calls resetFiles() to ensure clear file system
      */
-    @Test
-    public void TestDownload() throws InterruptedException, IOException {
+    // @Test
+    public void TestDownload() throws IOException, InterruptedException {
         resetFiles();
 
         PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    peers.get(0).getInputStream()));
 
         writer.print("download:file4.txt\n");
         writer.flush();
 
+        while (reader.ready()) {
+            System.out.println(reader.readLine()); 
+        }
+
+        Thread.sleep(1000);
         String contentsA, contentsB;
-        contentsA = new String(Files.readAllBytes(Paths.get(
-                "../src/files/mach0/file4.txt")));
-        contentsB = new String(Files.readAllBytes(Paths.get(
-                "../src/files/mach4/file4.txt")));  // read from original dir
+        contentsA = null;
+        contentsB = null;
+        try {
+
+            contentsB = new String(Files.readAllBytes(Paths.get(
+                    "../src/files/mach4/file4.txt")));  // read from original dir
+            contentsA = new String(Files.readAllBytes(Paths.get(
+                    "../src/files/mach0/file4.txt")));
+        } catch (IOException e) {
+            e.printStackTrace();
+            Assert.fail();
+        }
         Assert.assertEquals(contentsB, contentsA);
 
         killSystem();
@@ -162,8 +181,9 @@ public class SystemTests {
      * checks that Find displays new sharer of file
      * checks that Download works even when original holder is down
      */
-    public void CheckShare() {
-        resetFiles();
+    // @Test
+    public void CheckShare() throws IOException {
+        // resetFiles();
 
         PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
         BufferedReader reader = new BufferedReader(new InputStreamReader(

@@ -33,7 +33,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     public boolean Join(String IP, int Port, int machID) throws RemoteException {
         if (peerInfo.get(machID) == null){
             peerInfo.set(machID, new TrackedPeer(machID, Port, IP));
-            System.out.printf("[SERVER]: Added peer node at IP: %s and Port: %d.\n", IP, Port);
+            System.out.printf("[SERVER]: Added peer node with ID %d at IP: %s and Port: %d.\n", machID, IP, Port);
             return true;
         } else {
             System.out.printf("[SERVER]: Process with ID %d has already joined.\n", machID); 
@@ -83,7 +83,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
             return false;
         }
 
-        peerInfo.get(machID).SetFiles(fnames);
+        peerInfo.get(machID).SetFiles(fnames);  // TODO: tracker shouldn't ever get file contents
         for (String fname : fnames) {
             if (!fileMap.containsKey(fname)) {  // add filename as key
                 HashSet<Integer> newSet = new HashSet<Integer>();

@@ -304,7 +304,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 System.out.println(
                         "[PEER]: Failed to notify tracker of new file");
             }
-            // uncomment above when ready
         }
     }
 
