@@ -1,12 +1,13 @@
 import java.util.zip.CRC32;
 import java.util.Random;
+import java.io.Serializable;
 
 /**
  * instances of this class are passed from p2p as file downloads
  * has checksum
  * has simulation method to randomly add noise to download
  */
-public class FileDownload {
+public class FileDownload implements Serializable {
     byte[] contents;
     long checksum;
 

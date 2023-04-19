@@ -48,6 +48,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             numTasks.decrementAndGet();  // cleanup
             return null;
         }
+        System.out.println("[PEER]: serviced file to other peer");
         numTasks.decrementAndGet();
         // limitation: transmission takes time and occurs after load decremented
         return new FileDownload(contents);
@@ -75,16 +76,18 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         ArrayList<PeerNodeInterface> refs = new ArrayList<PeerNodeInterface>();
         for (TrackedPeer candidate : candidates) {
             try {
-                // TODO: refactor to get reference from registry on tracker's machine
-                PeerNodeInterface ref = candidate.SetAndGetReference();
-                int ping = ref.GetLoad()/** TODO: times latency */;
+                // gets reference from "tracker's" registry
+                PeerNodeInterface ref = candidate.SetAndGetReference(
+                                            serverHostname, trackerPort);
+                int latency = latencies[machID][candidate.GetID()];
+                int ping = ref.GetLoad() * latency;  // peer choosing function
                 candidate.SetPing(ping);
             } catch (NotBoundException|RemoteException e) {
                 candidate = null;
             }
         }
         while (candidates.remove(null));  // remove all nulls
-        candidates.sort(new ComparePeer());
+        candidates.sort(new ComparePeer());  // sorts by ping
 
         for (TrackedPeer candidate : candidates) {
 
@@ -92,14 +95,14 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             PeerNodeInterface ref = null;
             FileDownload dl = null;
             try {
-                ref = candidate.SetAndGetReference();
+                ref = candidate.SetAndGetReference(serverHostname, trackerPort);
                 dl = ref.Download(fname);
             } catch (NotBoundException e) {
                 continue;  // move on
             } catch (RemoteException f) {
                 // try one more time
                 try {
-                    ref.Download(fname);
+                    dl = ref.Download(fname);
                 } catch (RemoteException g) {
                     System.out.println("[PEER]: failed to download from peer "
                                             + candidate.GetID());
@@ -283,23 +286,24 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 System.out.println("[PEER]: It's possible that the server is currently offline. Try again later.");
             }
         } else {  // ====== DOWNLOAD ========
-            // try {
-            //     if (!DownloadAsClient(fname)) {
-            //         throw RemoteException;
-            //     }
-            // } catch (RemoteException e) {
-            //     System.out.printf(
-            //             "[PEER]: Failed to download %s. There may be no available peers with this file\n",
-            //             fname);
-            //     return;
-            // }
-            // fnames.add(fname);
-            // try {
-            //     server.UpdateList(fnames, machID);
-            // } catch (RemoteException e) {
-            //     System.out.println(
-            //             "[PEER]: Failed to notify tracker of new file");
-            // }
+            try {
+                if (!DownloadAsClient(fname)) {
+                    throw new RemoteException();
+                }
+            } catch (RemoteException e) {
+                System.out.printf(
+                        "[PEER]: Failed to download %s. There may be no available peers with this file\n",
+                        fname);
+                return;
+            }
+            System.out.println("[PEER]: downloaded " + fname);
+            fnames.add(fname);
+            try {
+                server.UpdateList(fnames, machID);
+            } catch (RemoteException e) {
+                System.out.println(
+                        "[PEER]: Failed to notify tracker of new file");
+            }
             // uncomment above when ready
         }
     }
@@ -311,7 +315,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
      */
     private static boolean ScanFiles() {
         if (System.getProperty("user.dir").endsWith("test")) {
-            dirPath = "../src/files/mach" + machID;
+            dirPath = "../src/files/mach" + machID + "/";
         }  // invoked from test directory
         try {
             File dir = new File(dirPath);
@@ -330,6 +334,9 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
     }
 
     public static boolean ScanLatencies(String cfname) {
+        if (System.getProperty("user.dir").endsWith("test")) {
+            cfname = "../src/files/static_latency.txt";
+        }  // invoked from test directory
         // read file by lines
         int maxSupported = 10;  // depends on #lines in static config files
         // technically floor(squrt(num_lines))
@@ -337,6 +344,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         try {
             entries = Files.readAllLines(Paths.get(cfname));
         } catch (IOException e) {
+            System.out.println("[DEBUG] BB");
             return false;
         }
         latencies = new int[maxSupported][maxSupported];
@@ -392,7 +400,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         // Join server as soon as node boots up
         port = GetRandomPortNumber();
 
-        dirPath = "files/mach" + machID;
+        dirPath = "files/mach" + machID + "/";
         fnames = new ArrayList<String>();
         if (!ScanFiles()) {
             String msg = "[PEER]: Failed to scan directory. Check that src/files/mach";
@@ -403,18 +411,10 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         }
         numTasks = new AtomicInteger(0);
 
-        // TODO: Might need to refactor this 
-        //Registry registry = LocateRegistry.createRegistry(port);
-        // TODO: call ScanLatencies("files/static_latencies.txt")
-        //registry.rebind("mach" + machID, this);
-
-        /* 
-        try {  // call UpdateList() on tracker
-            server.UpdateList(fnames, machID);
-        } catch (RemoteException e) {
-            // shouldn't really get here if previous calls succeeded
+        if (!ScanLatencies("files/static_latency.txt")) {
+            System.out.println("[PEER]: Failed to scan static latency file");
             System.exit(0);
-        }*/
+        }
         
         PeerNode peer = new PeerNode();
         peer.HandleJoinAndLeave("join");

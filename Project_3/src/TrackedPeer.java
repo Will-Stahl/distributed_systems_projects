@@ -42,13 +42,16 @@ public class TrackedPeer implements Serializable {
     //     return new TrackedPeer(id, port, addr, files.clone());
     // }
 
-    public PeerNodeInterface SetAndGetReference()
+    /**
+     * sets reference if not set and returns it
+     */
+    public PeerNodeInterface SetAndGetReference(String serverHostname, int serverPort)
             throws NotBoundException, RemoteException {
         if (reference != null) {
             return reference;
         }
-        Registry registry = LocateRegistry.getRegistry(addr, port);
-        reference = (PeerNodeInterface) registry.lookup("mach_" + id);
+        Registry registry = LocateRegistry.getRegistry(serverHostname, serverPort);
+        reference = (PeerNodeInterface) registry.lookup("Peer_" + id);
         return reference;
     }
 
