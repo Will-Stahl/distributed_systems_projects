@@ -22,7 +22,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
     private static int port;
     private static int machID;
     private static int[][] latencies;
-    private static ArrayList<FileInfo> fnames;  // TODO: make thread-safe
+    private static List<FileInfo> fnames;  // TODO: make thread-safe
     private static TrackerInterface server;
     private static String serverHostname;
     private static AtomicInteger numTasks;  // thread safe measure of load
@@ -420,7 +420,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         port = GetRandomPortNumber();
 
         dirPath = "files/mach" + machID + "/";
-        fnames = new ArrayList<FileInfo>();
+        fnames = Collections.synchronizedList(new ArrayList<FileInfo>());
         if (!ScanFiles()) {
             String msg = "[PEER]: Failed to scan directory. Check that src/files/mach";
             msg += machID + " exists with the correct permissions.";

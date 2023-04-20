@@ -9,6 +9,11 @@ import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.net.InetAddress;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 
 public class SystemTests {
@@ -35,6 +40,15 @@ public class SystemTests {
     }
 
     private static boolean startSystem() {
+        try {  // destroy previous references if exists
+            Registry registry = LocateRegistry.getRegistry(11396);
+            for (int i = 0; i < 5; i++) {
+                try {
+                    registry.unbind("Peer_" + i);
+                } catch (Exception e) {}
+            }
+        } catch (Exception e) {}
+
         try {
             // start tracker first
             tracker = new ProcessBuilder("java", "-cp", "../src",
@@ -93,13 +107,7 @@ public class SystemTests {
         BufferedReader reader = new BufferedReader(new InputStreamReader(
                     peers.get(0).getInputStream()));
         String ln;
-
-        BufferedReader tReader = new BufferedReader(new InputStreamReader(
-                    tracker.getInputStream()));  // DEBUG
-        peers.get(0).destroy(); // DEBUG
-        for (int i = 0; i < 15; i++) {  // DEBUG
-            System.out.println(tReader.readLine());
-        }
+        // TODO: nodes are still dying, not sure why
 
         writer.print("find:file0.txt\n");
         writer.flush();
@@ -154,11 +162,12 @@ public class SystemTests {
         writer.print("download:file4.txt\n");
         writer.flush();
 
-        while (reader.ready()) {
-            System.out.println(reader.readLine()); 
+        for (int i = 0; i < 3; i++) {
+            reader.readLine(); 
         }
 
-        Thread.sleep(1000);
+        // Thread.sleep(2500);  // this doesn't help
+        // TODO: file isn't detectible until after we check for it
         String contentsA, contentsB;
         contentsA = null;
         contentsB = null;
@@ -212,3 +221,11 @@ public class SystemTests {
         killSystem();
     }
 }
+
+
+        // BufferedReader tReader = new BufferedReader(new InputStreamReader(
+        //             tracker.getInputStream()));  // DEBUG
+        // peers.get(0).destroy(); // DEBUG
+        // for (int i = 0; i < 15; i++) {  // DEBUG
+        //     System.out.println(tReader.readLine());
+        // }

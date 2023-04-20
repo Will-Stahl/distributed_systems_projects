@@ -12,15 +12,17 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     private static Registry registry;
 
     // data structure to store joined peers
-    private static ArrayList<TrackedPeer> peerInfo;
+    private static List<TrackedPeer> peerInfo;
     // known files and their locations
-    private static HashMap<String, FileInfo> fileMap;
+    private static Map<String, FileInfo> fileMap;
 
     public Tracker() throws RemoteException {
-        fileMap = new HashMap<String, FileInfo>();
-        peerInfo = new ArrayList<TrackedPeer>();
-        for (int i = 0; i < 5; i ++){
-            peerInfo.add(null);
+        fileMap = Collections.synchronizedMap(new HashMap<String, FileInfo>());
+        peerInfo = Collections.synchronizedList(new ArrayList<TrackedPeer>());
+        synchronized (peerInfo) {
+            for (int i = 0; i < 5; i ++){
+                peerInfo.add(null);
+            }
         }
     }
 
@@ -71,10 +73,10 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     /**
      * peer calls this on coordinator to update its respective file info
      * assumes that node calling has joined
-     * @param fnames ArrayList of all file names that are shareable from peer
+     * @param fnames List of all file names that are shareable from peer
      * @param machID unique ID of peer, assuming no byzantine failures
      */
-    public boolean UpdateList(ArrayList<FileInfo> fData, int machID) throws RemoteException {
+    public boolean UpdateList(List<FileInfo> fData, int machID) throws RemoteException {
         if (peerInfo.get(machID) == null){
             System.out.println("[SERVER]: Peer is currently not part of the server.");
             return false;
@@ -101,22 +103,24 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     }
 
     private void removeNode(int machID) {
-        TrackedPeer peerToBeRemoved = peerInfo.get(machID);
+        synchronized (peerInfo) {
+            TrackedPeer peerToBeRemoved = peerInfo.get(machID);
+            for (String fname : peerToBeRemoved.GetFiles()) {
+                // remove machID from fileMap
+                if (fileMap.containsKey(fname)) {
+                    // fileMap should always contain it, but check
+                    fileMap.get(fname).remove(peerInfo.get(machID));
+                    // machID should exist in that set, but okay if not
+                }
 
-        // for all file names associated with machID
-        for (String fname : peerToBeRemoved.GetFiles()) {
-            // remove machID from fileMap
-            if (fileMap.containsKey(fname)) {
-                // fileMap should always contain it, but check
-                fileMap.get(fname).remove(peerInfo.get(machID));
-                // machID should exist in that set, but okay if not
-            }
-
-            // if machID was only node associated with the file, remove it
-            if (fileMap.get(fname).isEmpty()) {
-                fileMap.remove(fname);
+                // if machID was only node associated with the file, remove it
+                if (fileMap.get(fname).isEmpty()) {
+                    fileMap.remove(fname);
+                }
             }
         }
+
+        // for all file names associated with machID
 
         // Set peerInfo for this particular ID back to null in case the peer node decides to join back at a later time.
         peerInfo.set(machID, null);
@@ -138,6 +142,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
             Timer timer = new Timer();
                 TimerTask task = new TimerTask() {
                     public void run(){
+                        synchronized (peerInfo) {
                             for (int i = 0; i < peerInfo.size(); i++){
                                 try {
                                     if (peerInfo.get(i) != null){
@@ -151,6 +156,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
                                     peerInfo.set(i, null);
                                 }
                             }
+                        }
                     }
                 };
             timer.schedule(task, 0, 2000);
