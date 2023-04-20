@@ -29,8 +29,7 @@ public class SystemTests {
         }
     }
 
-    private static boolean startSystem() {
-        resetFiles();
+    private static void clearRegistry() {
         try {  // destroy previous references if exists
             Registry registry = LocateRegistry.getRegistry(11396);
             for (int i = 0; i < 5; i++) {
@@ -39,6 +38,12 @@ public class SystemTests {
                 } catch (Exception e) {}
             }
         } catch (Exception e) {}
+
+    }
+
+    private static boolean startSystem() {
+        resetFiles();
+        clearRegistry();
 
         try {
             // start tracker first
@@ -188,11 +193,10 @@ public class SystemTests {
 
     /**
      * checks that files are shareable from peer after downloading
-     * checks that Find displays new sharer of file
      * checks that Download works even when original holder is down
      */
     @Test
-    public void CheckShare() throws IOException {
+    public void TestShare() throws IOException {
 
         PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
         BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -241,12 +245,42 @@ public class SystemTests {
 
         killSystem();
     }
+
+
+    /**
+     * kills and restarts tracker
+     * checks that nodes can rejoin smoothly
+     * checks that files are findable after rejoining
+     */
+    @Test
+    public void TestTrackerFault() throws IOException {
+        tracker.destroy();
+        clearRegistry();
+        tracker = new ProcessBuilder("java", "-cp", "../src",
+                "Tracker").start();
+        BufferedReader tReader = new BufferedReader(new InputStreamReader(
+                tracker.getInputStream()));
+        Assert.assertTrue(tracker.isAlive());
+        // wait for output to indicate readiness
+        tReader.readLine();
+        Assert.assertEquals("[SERVER]: Tracking Server is ready at port 11396.", tReader.readLine());
+
+        PrintWriter writer;
+        for (int i = 0; i < 5; i++) {
+            writer = new PrintWriter(peers.get(i).getOutputStream());
+            writer.print("join\n");
+            writer.flush();
+        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+            peers.get(4).getInputStream()));
+        while (reader.ready()) {  // TODO: must be a for loop, must block
+            System.out.println(reader.readLine());
+        }
+        // TODO: check successful join msg, check find
+        writer.print("find:file2.txt\n");
+        writer.flush();
+        // TODO
+
+        killSystem();
+    }
 }
-
-
-        // BufferedReader tReader = new BufferedReader(new InputStreamReader(
-        //             tracker.getInputStream()));  // DEBUG
-        // peers.get(0).destroy(); // DEBUG
-        // for (int i = 0; i < 15; i++) {  // DEBUG
-        //     System.out.println(tReader.readLine());
-        // }
