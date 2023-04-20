@@ -94,8 +94,10 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
                 fileMap.put(finfo.getName(), finfo);
             }
             else {  // key into structure, add machID if not already present
-                // vals of map are a set
-                fileMap.get(finfo.getName()).add(peerInfo.get(machID));
+                FileInfo peers = fileMap.get(finfo.getName());
+                if (!peers.contains(peerInfo.get(machID))) {
+                    peers.add(peerInfo.get(machID));
+                }
             }
         }
         System.out.printf("[SERVER]: Updated with files from client with mach ID = %d.\n", machID);

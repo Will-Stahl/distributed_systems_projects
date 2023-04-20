@@ -27,19 +27,10 @@ public class SystemTests {
         if (!startSystem()) {
             System.out.println("processes failed to start, tests will fail");
         }
-
-        // stopper = new Thread(new Runnable(){
-        //     @Override
-        //     public void run(){
-        //         Scanner ender = new Scanner(System.in);
-        //         ender.nextLine();
-        //         killSystem();
-        //     }
-        // }).start();
-
     }
 
     private static boolean startSystem() {
+        resetFiles();
         try {  // destroy previous references if exists
             Registry registry = LocateRegistry.getRegistry(11396);
             for (int i = 0; i < 5; i++) {
@@ -52,7 +43,10 @@ public class SystemTests {
         try {
             // start tracker first
             tracker = new ProcessBuilder("java", "-cp", "../src",
-                    "Tracker").start();
+                "Tracker").start();
+            BufferedReader tReader = new BufferedReader(new InputStreamReader(
+                tracker.getInputStream()));
+            tReader.readLine();  // wait for output to indicate readiness
             if (!tracker.isAlive()) {
                 killSystem();
                 return false;
@@ -62,11 +56,19 @@ public class SystemTests {
             for (int i = 0; i < 5; i++) {
                 Process p = new ProcessBuilder("java", "-cp", "../src",
                     "PeerNode", "localhost", String.valueOf(i)).start();
+                peers.add(p);
+            }
+            for (Process p : peers) {  // this waits until they have started
                 if (!p.isAlive()) {
                     killSystem();
                     return false;
                 }
-                peers.add(p);
+                // wait for each to produce output to ensure they have started
+                BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    peers.get(peers.indexOf(p)).getInputStream()));
+                reader.readLine();
+                reader.readLine();
+                reader.readLine();
             }
 
         } catch (IOException e) {
@@ -98,22 +100,20 @@ public class SystemTests {
         }
     }
 
+
     /**
      * basic tests for Find() on a vanilla system
      */
     @Test
-    public void TestFind() throws IOException {
+    public void TestFind() throws IOException, InterruptedException {
         PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
         BufferedReader reader = new BufferedReader(new InputStreamReader(
                     peers.get(0).getInputStream()));
         String ln;
-        // TODO: nodes are still dying, not sure why
 
         writer.print("find:file0.txt\n");
         writer.flush();
-        for (int i = 0; i < 3; i++) {
-            System.out.println(reader.readLine());
-        }
+
         Assert.assertEquals("[PEER]: Found file at nodes: 0", reader.readLine());
 
         writer.print("find:file1.txt\n");
@@ -151,9 +151,8 @@ public class SystemTests {
      * basic download test that checks folder for whether file was downloaded
      * calls resetFiles() to ensure clear file system
      */
-    // @Test
+    @Test
     public void TestDownload() throws IOException, InterruptedException {
-        resetFiles();
 
         PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
         BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -163,11 +162,12 @@ public class SystemTests {
         writer.flush();
 
         for (int i = 0; i < 3; i++) {
-            reader.readLine(); 
-        }
+            String res = reader.readLine();
+            System.out.println(res);
+            Assert.assertNotEquals(
+                "[PEER]: no members found with requested file\n", res);
+        }  // consume output to allow execution of download
 
-        // Thread.sleep(2500);  // this doesn't help
-        // TODO: file isn't detectible until after we check for it
         String contentsA, contentsB;
         contentsA = null;
         contentsB = null;
@@ -191,25 +191,46 @@ public class SystemTests {
      * checks that Find displays new sharer of file
      * checks that Download works even when original holder is down
      */
-    // @Test
+    @Test
     public void CheckShare() throws IOException {
-        // resetFiles();
 
         PrintWriter writer = new PrintWriter(peers.get(0).getOutputStream());
         BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    peers.get(1).getInputStream()));  // peer 1 looks for file2.txt
+                    peers.get(0).getInputStream()));
 
         writer.print("download:file2.txt\n");
         writer.flush();
 
         for (int i = 0; i < 3; i++) {
-            System.out.println(reader.readLine());
-        }
-        Assert.assertEquals("[PEER]: Found file at nodes: 0, 2", reader.readLine());
+            String res = reader.readLine();
+            System.out.println(res);
+            Assert.assertNotEquals(
+                "[PEER]: no members found with requested file\n", res);
+            if (res.equals(
+                "[PEER]: downloaded file2.txt\n")) {
+                break;
+            }
+        }  // consume output to allow execution of download
+
+        reader = new BufferedReader(new InputStreamReader(
+                    peers.get(1).getInputStream()));  // peer 1 looks for file2.txt
         writer = new PrintWriter(peers.get(1).getOutputStream());
         peers.get(2).destroy();  // only leave peer 0 to share this
+        // tries to download from peer 2 and fails, tries next
         writer.print("download:file2.txt\n");
         writer.flush();
+
+        for (int i = 0; i < 3; i++) {
+            String res = reader.readLine();
+            System.out.println(res);
+
+            Assert.assertNotEquals(
+                "[PEER]: no members found with requested file\n", res);
+            if (res.equals(
+                "[PEER]: downloaded file2.txt\n")) {
+                break;
+            }
+        }  // consume output to allow execution of download
 
         String contentsA, contentsB;
         contentsA = new String(Files.readAllBytes(Paths.get(

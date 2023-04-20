@@ -79,3 +79,15 @@ A client cannot leave the tracker server if it was never part of it.
 Example image below:
 
 <img src="images/leave_error.png"  width="60%" height="60%">
+
+## Running Tests
+Navigate to the test directory from root with
+```
+cd test
+```
+Compile and then run with
+````
+javac -cp ./../lib/junit-4.13.2.jar:. RunTests.java
+java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTests
+````
+Note that system tests will take some time to run. Each unit includes 1 second of sleeping to allow the system to fully start. Also note that the tests manipulate the `files` directory, so anything done in the command line interface may be changed.

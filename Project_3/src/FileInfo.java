@@ -60,4 +60,8 @@ public class FileInfo implements Serializable {
         return possessors.isEmpty();
     }
 
+    public boolean contains(TrackedPeer peer) {
+        return possessors.contains(peer);
+    }
+
 }
