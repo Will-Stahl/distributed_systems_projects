@@ -14,10 +14,10 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
     // data structure to store joined peers
     private static ArrayList<TrackedPeer> peerInfo;
     // known files and their locations
-    private static HashMap<String, HashSet<Integer>> fileMap;
+    private static HashMap<String, FileInfo> fileMap;
 
     public Tracker() throws RemoteException {
-        fileMap = new HashMap<String, HashSet<Integer>>();
+        fileMap = new HashMap<String, FileInfo>();
         peerInfo = new ArrayList<TrackedPeer>();
         for (int i = 0; i < 5; i ++){
             peerInfo.add(null);
@@ -58,17 +58,14 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
      * does NOT check if peer is joined, as this function does not affect state
      * @param fname filename peer is seeking
      */
-    public ArrayList<TrackedPeer> Find(String fname) throws RemoteException {
-        HashSet<Integer> ids = fileMap.get(fname);
-        if (ids == null) {  // no attached peer has it
+    public FileInfo Find(String fname) throws RemoteException {
+        if (fileMap.get(fname) == null
+                || fileMap.get(fname).getMembers() == null) {
             System.out.println("[SERVER]: Not currently tracking requested file");
             return null;
         }
-        ArrayList<TrackedPeer> answers = new ArrayList<TrackedPeer>();
-        for (Integer nodeID : ids) {
-            answers.add(peerInfo.get(nodeID.intValue()));
-        }
-        return answers;
+
+        return fileMap.get(fname);
     }
 
     /**
@@ -77,21 +74,26 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
      * @param fnames ArrayList of all file names that are shareable from peer
      * @param machID unique ID of peer, assuming no byzantine failures
      */
-    public boolean UpdateList(ArrayList<String> fnames, int machID) throws RemoteException {
+    public boolean UpdateList(ArrayList<FileInfo> fData, int machID) throws RemoteException {
         if (peerInfo.get(machID) == null){
             System.out.println("[SERVER]: Peer is currently not part of the server.");
             return false;
         }
 
-        peerInfo.get(machID).SetFiles(fnames);  // TODO: tracker shouldn't ever get file contents
-        for (String fname : fnames) {
-            if (!fileMap.containsKey(fname)) {  // add filename as key
-                HashSet<Integer> newSet = new HashSet<Integer>();
-                newSet.add(Integer.valueOf(machID));
-                fileMap.put(fname, newSet);
+        ArrayList<String> fnames = new ArrayList<String>();
+        for (FileInfo finfo : fData) {
+            fnames.add(finfo.getName());
+        }  // refactored to send names with checksum
+        peerInfo.get(machID).SetFiles(fnames);
+
+        for (FileInfo finfo : fData) {
+            if (!fileMap.containsKey(finfo.getName())) {  // add filename as key
+                finfo.add(peerInfo.get(machID));
+                fileMap.put(finfo.getName(), finfo);
             }
             else {  // key into structure, add machID if not already present
-                fileMap.get(fname).add(Integer.valueOf(machID));  // vals of map are a set
+                // vals of map are a set
+                fileMap.get(finfo.getName()).add(peerInfo.get(machID));
             }
         }
         System.out.printf("[SERVER]: Updated with files from client with mach ID = %d.\n", machID);
@@ -106,7 +108,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
             // remove machID from fileMap
             if (fileMap.containsKey(fname)) {
                 // fileMap should always contain it, but check
-                fileMap.get(fname).remove(Integer.valueOf(machID));
+                fileMap.get(fname).remove(peerInfo.get(machID));
                 // machID should exist in that set, but okay if not
             }
 

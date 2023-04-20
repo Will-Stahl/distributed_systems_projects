@@ -96,7 +96,8 @@ public class SystemTests {
 
         BufferedReader tReader = new BufferedReader(new InputStreamReader(
                     tracker.getInputStream()));  // DEBUG
-        for (int i = 0; i < 10; i++) {  // DEBUG
+        peers.get(0).destroy(); // DEBUG
+        for (int i = 0; i < 15; i++) {  // DEBUG
             System.out.println(tReader.readLine());
         }
 

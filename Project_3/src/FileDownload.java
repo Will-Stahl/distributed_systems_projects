@@ -16,7 +16,7 @@ public class FileDownload implements Serializable {
         CRC32 crc = new CRC32();
         crc.update(contents);  // computes checksum
         checksum = crc.getValue();  // store checksum value
-        //addNoise();
+        addNoise();
     }
 
     public byte[] GetContents() {
@@ -37,6 +37,17 @@ public class FileDownload implements Serializable {
         return (crc.getValue() == checksum);
     }
 
+    public long computeChecksum() {
+        CRC32 crc = new CRC32();
+        crc.update(contents);  // computes checksum
+        return crc.getValue();
+    }
+
+    /**
+     * corrupts file randomly
+     * if file is 5 bytes for instance:
+     * it has 5/10,000 chance to get corrupted
+     */
     private void addNoise() {
         Random rand = new Random();
         int corrupt = rand.nextInt(10000);  // corrupt 1 of every 10 KB

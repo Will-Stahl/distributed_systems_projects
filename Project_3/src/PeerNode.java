@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.InvalidPathException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.CRC32;
 import java.util.*;
 
 public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
@@ -21,7 +22,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
     private static int port;
     private static int machID;
     private static int[][] latencies;
-    private static ArrayList<String> fnames;  // TODO: make thread-safe
+    private static ArrayList<FileInfo> fnames;  // TODO: make thread-safe
     private static TrackerInterface server;
     private static String serverHostname;
     private static AtomicInteger numTasks;  // thread safe measure of load
@@ -65,15 +66,18 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
     private static boolean DownloadAsClient(String fname) {
         numTasks.incrementAndGet();  // must cleanup before every return
 
-        ArrayList<TrackedPeer> candidates = null;
+        FileInfo finfo = null;
         try {
-            candidates = server.Find(fname);
+            finfo = server.Find(fname);
         } catch (RemoteException e) {
             // careful to decrement thread-shared variable
             numTasks.decrementAndGet();
             return false;
         }
-        ArrayList<PeerNodeInterface> refs = new ArrayList<PeerNodeInterface>();
+        if (finfo == null) {
+            System.out.println("[PEER]: no members found with requested file");
+        }
+        ArrayList<TrackedPeer> candidates = finfo.getMembers();
         for (TrackedPeer candidate : candidates) {
             try {
                 // gets reference from "tracker's" registry
@@ -115,10 +119,12 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             }
 
             try {
-                if (!dl.Checksum()) {  // if checksum fails
+                // if checksum fails
+                if (dl.computeChecksum() != finfo.getChecksum()) {
                     dl = ref.Download(fname);  // try same peer again
                 }
-                if (!dl.Checksum()) {  // if it breaks again
+                // if it breaks again
+                if (dl.computeChecksum() != finfo.getChecksum()) {
                     continue;  // move on from this peer
                 }
 
@@ -260,22 +266,21 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         String fname = parts[1].trim();
         if (parts[0].trim().equalsIgnoreCase("find")){
             try {
-                ArrayList<TrackedPeer> answers = server.Find(fname);
-                if (answers == null) {  // return since nobody has it
+                FileInfo finfo = server.Find(fname);
+                if (finfo == null) {  // return since nobody has it
                     System.out.println("[PEER]: No peers found with file");
                     return;
                 } else {
                     // TODO: Might have to refactor this a bit
+                    ArrayList<TrackedPeer> answers = finfo.getMembers();
                     String findSuccessString = "[PEER]: Found file at nodes: ";
                     String checkSumsString = "[PEER]: Checksums = ";
+                    checkSumsString += finfo.getChecksum();
                     for (int i = 0; i < answers.size(); i++){
                         TrackedPeer peer = answers.get(i);
-                        HashMap<String, Long> checkSumMap = peer.GetCheckSums();
                         findSuccessString += peer.GetID();
-                        checkSumsString += checkSumMap.get(fname);
                         if (i != answers.size() - 1){
-                            findSuccessString += ",";
-                            checkSumsString += ",";
+                            findSuccessString += ", ";
                         }
                     }
                     System.out.println(findSuccessString);
@@ -297,7 +302,18 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 return;
             }
             System.out.println("[PEER]: downloaded " + fname);
-            fnames.add(fname);
+
+            // get checksum for storing
+            try {
+                byte[] contents = Files.readAllBytes(Paths.get(dirPath + fname));
+                CRC32 checksum = new CRC32();
+                checksum.update(contents);
+                fnames.add(new FileInfo(fname, checksum.getValue()));
+            } catch (IOException e) {
+                System.out.println(
+                        "[PEER]: Failed to get file checksum");
+            }
+
             try {
                 server.UpdateList(fnames, machID);
             } catch (RemoteException e) {
@@ -319,11 +335,15 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         try {
             File dir = new File(dirPath);
             for (File f : dir.listFiles()) {
-                fnames.add(f.getName());
+                byte[] contents;
+                contents = Files.readAllBytes(Paths.get(dirPath + f.getName()));
+                CRC32 crc = new CRC32();
+                crc.update(contents);
+                fnames.add(new FileInfo(f.getName(), crc.getValue()));
             }
             return true;
-        } catch (SecurityException e) {
-            System.out.println();
+        } catch (SecurityException|IOException e) {
+            System.out.println("[PEER]: failed to record file info");
             return false;
         }
     }
@@ -400,7 +420,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         port = GetRandomPortNumber();
 
         dirPath = "files/mach" + machID + "/";
-        fnames = new ArrayList<String>();
+        fnames = new ArrayList<FileInfo>();
         if (!ScanFiles()) {
             String msg = "[PEER]: Failed to scan directory. Check that src/files/mach";
             msg += machID + " exists with the correct permissions.";

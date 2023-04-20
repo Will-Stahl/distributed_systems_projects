@@ -16,7 +16,6 @@ public class TrackedPeer implements Serializable {
     private String addr;
     private ArrayList<String> files;
     private PeerNodeInterface reference;
-    private HashMap<String, Long> checkSumMap; 
     private int ping;
 
     public TrackedPeer(int id, int port, String addr) {
@@ -69,23 +68,24 @@ public class TrackedPeer implements Serializable {
     public void SetFiles(ArrayList<String> fnames) {
         this.files = fnames;
 
+        // tracker calls this method, so it shouldn't do the following
         // Compute and store checksums for each file.
-        checkSumMap = new HashMap<>();
-        for (int i = 0; i < files.size(); i++){
-            String path = "files/mach" + id + "/" + files.get(i);
-            File file = new File(path);
-            try {
-                FileInputStream fis = new FileInputStream(file);
-                byte[] byteArray = new byte[(int) file.length()];
-                fis.read(byteArray);
-                fis.close();
+        // checkSumMap = new HashMap<>();
+        // for (int i = 0; i < files.size(); i++){
+        //     String path = "files/mach" + id + "/" + files.get(i);
+        //     File file = new File(path);
+        //     try {
+        //         FileInputStream fis = new FileInputStream(file);
+        //         byte[] byteArray = new byte[(int) file.length()];
+        //         fis.read(byteArray);
+        //         fis.close();
 
-                FileDownload info = new FileDownload(byteArray);
-                checkSumMap.put(files.get(i), info.GetChecksum());
-            } catch (Exception e){
-                System.out.println("[SERVER]: Error occured while reading file. Please ensure the file is present in the directory.");
-            }
-        }
+        //         FileDownload info = new FileDownload(byteArray);
+        //         checkSumMap.put(files.get(i), info.GetChecksum());
+        //     } catch (Exception e){
+        //         System.out.println("[SERVER]: Error occured while reading file. Please ensure the file is present in the directory.");
+        //     }
+        // }
     }
 
     public int GetID() {
@@ -112,7 +112,4 @@ public class TrackedPeer implements Serializable {
         this.ping = ping;
     }
 
-    public HashMap<String, Long> GetCheckSums(){
-        return checkSumMap;
-    }
 }
