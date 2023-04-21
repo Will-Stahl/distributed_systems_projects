@@ -75,9 +75,17 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             return false;
         }
         if (finfo == null) {
-            System.out.println("[PEER]: no members found with requested file");
+            return false;
         }
         ArrayList<TrackedPeer> candidates = finfo.getMembers();
+
+        // Check if file is already present in this peer's folder
+        for (TrackedPeer candidate : candidates) {
+            if (candidate.GetID() == machID){
+                return false;
+            }
+        }
+
         for (TrackedPeer candidate : candidates) {
             try {
                 // gets reference from "tracker's" registry
@@ -108,7 +116,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 try {
                     dl = ref.Download(fname);
                 } catch (RemoteException g) {
-                    System.out.println("[PEER]: failed to download from peer "
+                    System.out.println("[PEER]: Failed to download from peer "
                                             + candidate.GetID());
                     continue;  // move on from twice-failed peer
                 }
@@ -135,7 +143,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             } catch (RemoteException e) {
                 continue;
             } catch (IOException f) {
-                System.out.println("[PEER]: error when writing to file");
+                System.out.println("[PEER]: Error when writing to file.");
                 numTasks.decrementAndGet();
                 return false;
             }
@@ -271,7 +279,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                     System.out.println("[PEER]: No peers found with file");
                     return;
                 } else {
-                    // TODO: Might have to refactor this a bit
                     ArrayList<TrackedPeer> answers = finfo.getMembers();
                     String findSuccessString = "[PEER]: Found file at nodes: ";
                     String checkSumsString = "[PEER]: Checksums = ";
@@ -287,21 +294,21 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                     System.out.println(checkSumsString);
                 }
             } catch (Exception e){
-                e.printStackTrace();
                 System.out.println("[PEER]: It's possible that the server is currently offline. Try again later.");
             }
         } else {  // ====== DOWNLOAD ========
+
             try {
                 if (!DownloadAsClient(fname)) {
                     throw new RemoteException();
                 }
             } catch (RemoteException e) {
                 System.out.printf(
-                        "[PEER]: Failed to download %s. There may be no available peers with this file\n",
+                        "[PEER]: Failed to download file %s. It's possible the file is already present in this peer's folder or the other peer's don't currently have it.\n",
                         fname);
                 return;
             }
-            System.out.println("[PEER]: downloaded " + fname);
+            System.out.println("[PEER]: Downloaded " + fname);
 
             // get checksum for storing
             try {
@@ -311,14 +318,14 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 fnames.add(new FileInfo(fname, checksum.getValue()));
             } catch (IOException e) {
                 System.out.println(
-                        "[PEER]: Failed to get file checksum");
+                        "[PEER]: Failed to get file checksum.");
             }
 
             try {
                 server.UpdateList(fnames, machID);
             } catch (RemoteException e) {
                 System.out.println(
-                        "[PEER]: Failed to notify tracker of new file");
+                        "[PEER]: Failed to notify tracker of new file.");
             }
         }
     }
@@ -343,7 +350,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             }
             return true;
         } catch (SecurityException|IOException e) {
-            System.out.println("[PEER]: failed to record file info");
+            System.out.println("[PEER]: failed to record file info.");
             return false;
         }
     }
