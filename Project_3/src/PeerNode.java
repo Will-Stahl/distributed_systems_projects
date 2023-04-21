@@ -49,7 +49,8 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             numTasks.decrementAndGet();  // cleanup
             return null;
         }
-        System.out.println("[PEER]: serviced file to other peer");
+        System.out.println("[PEER]: Serviced file to other peer.\n");
+        System.out.println("[PEER]: Enter command:");
         numTasks.decrementAndGet();
         // limitation: transmission takes time and occurs after load decremented
         return new FileDownload(contents);
@@ -304,7 +305,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 }
             } catch (RemoteException e) {
                 System.out.printf(
-                        "[PEER]: Failed to download file %s. It's possible the file is already present in this peer's folder or the other peer's don't currently have it.\n",
+                        "[PEER]: File %s was not downloaded. It's possible the file is already present in this peer's folder or the other peer's don't currently have it.\n",
                         fname);
                 return;
             }
