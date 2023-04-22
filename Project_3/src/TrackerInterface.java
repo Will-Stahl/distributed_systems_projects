@@ -14,4 +14,6 @@ public interface TrackerInterface extends Remote {
 
     // peer node calls this on tracker to send its updated list
     public boolean UpdateList(List<FileInfo> fnames, int machID) throws RemoteException;
+
+    public void Ping() throws RemoteException;
 }

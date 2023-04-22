@@ -128,15 +128,12 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
         peerInfo.set(machID, null);
     }
 
+    public void Ping(){}
+
     public static void main(String[] args){
         try{
             TrackerInterface server = new Tracker();
             registry = LocateRegistry.createRegistry(serverPort);
-            for (int i = 0; i < 5; i++) {
-                try {
-                    registry.unbind("Peer_" + i);
-                } catch (Exception e) {}
-            }
             registry.rebind("TrackingServer", server);
             System.out.printf("\n[SERVER]: Tracking Server is ready at port %d. \n", serverPort);
 
@@ -151,7 +148,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
                                         PeerNodeInterface peer = (PeerNodeInterface) registry.lookup("Peer_" + i);
                                         peer.Ping();
                                         // TODO: Uncomment once done with debugging.
-                                        //System.out.printf("[SERVER]: Peer with MachID = %d is online!\n", i);
+                                        System.out.printf("[SERVER]: Peer with MachID = %d is online!\n", i);
                                     }
                                 } catch (Exception e){
                                     // If the peer is offline, then set the object value to null

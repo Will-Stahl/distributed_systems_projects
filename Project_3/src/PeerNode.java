@@ -271,6 +271,13 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
      * @param request: Request string entered by the peer node in the command line.
      */
     private static void HandleFindAndDownloadRequest(String request){
+        try {
+            server.Ping();
+        } catch (Exception e){
+            System.out.println("[PEER]: It's possible that the server is currently offline. Try again later.");
+            return;
+        }
+        
         String[] parts = request.split(":");
         String fname = parts[1].trim();
         if (parts[0].trim().equalsIgnoreCase("find")){
