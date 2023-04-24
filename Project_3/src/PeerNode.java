@@ -83,7 +83,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         // Check if file is already present in this peer's folder
         for (TrackedPeer candidate : candidates) {
             if (candidate.GetID() == machID){
-                System.out.println("Already present");
                 return false;
             }
         }
@@ -244,8 +243,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 server.Leave(machID);
                 System.exit(0);
             }
-
-            System.out.println("SIZE = " + fnames.size());
 
             // Initialize peer IP address and port number
             IP = InetAddress.getLocalHost().getHostAddress();
