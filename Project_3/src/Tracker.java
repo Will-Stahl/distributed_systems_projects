@@ -137,6 +137,12 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
             registry.rebind("TrackingServer", server);
             System.out.printf("\n[SERVER]: Tracking Server is ready at port %d. \n", serverPort);
 
+            for (int i = 0; i < 5; i++) {
+                try {
+                    registry.unbind("Peer_" + i);
+                } catch (Exception e) {}
+            }
+
             // Periodically ping every peer node that is currently online
             Timer timer = new Timer();
                 TimerTask task = new TimerTask() {

@@ -83,6 +83,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         // Check if file is already present in this peer's folder
         for (TrackedPeer candidate : candidates) {
             if (candidate.GetID() == machID){
+                System.out.println("Already present");
                 return false;
             }
         }
@@ -233,6 +234,19 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
      */
     public void HandleJoinAndLeave(String request){
         try {
+            // Read in files from peer's folder
+            dirPath = "files/mach" + machID + "/";
+            fnames = Collections.synchronizedList(new ArrayList<FileInfo>());
+            if (!ScanFiles()) {
+                String msg = "[PEER]: Failed to scan directory. Check that src/files/mach";
+                msg += machID + " exists with the correct permissions.";
+                System.out.println(msg);
+                server.Leave(machID);
+                System.exit(0);
+            }
+
+            System.out.println("SIZE = " + fnames.size());
+
             // Initialize peer IP address and port number
             IP = InetAddress.getLocalHost().getHostAddress();
 
@@ -246,6 +260,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                     
                     // Update server with all files associated with this client
                     server.UpdateList(fnames, machID);
+                    System.out.println("[PEER]: Server has been updated with the latest files.");
 
                     // Register this peer object on the server's registry
                     registry.rebind("Peer_" + machID, this);
@@ -312,7 +327,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 }
             } catch (RemoteException e) {
                 System.out.printf(
-                        "[PEER]: File %s was not downloaded. It's possible the file is already present in this peer's folder or the other peer's don't currently have it.\n",
+                        "[PEER]: Download unsuccessful. Either file is not currently being tracked or is already present in peer's folder. \n",
                         fname);
                 return;
             }
@@ -434,15 +449,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         // Join server as soon as node boots up
         port = GetRandomPortNumber();
 
-        dirPath = "files/mach" + machID + "/";
-        fnames = Collections.synchronizedList(new ArrayList<FileInfo>());
-        if (!ScanFiles()) {
-            String msg = "[PEER]: Failed to scan directory. Check that src/files/mach";
-            msg += machID + " exists with the correct permissions.";
-            System.out.println(msg);
-            server.Leave(machID);
-            System.exit(0);
-        }
         numTasks = new AtomicInteger(0);
 
         if (!ScanLatencies("files/static_latency.txt")) {
