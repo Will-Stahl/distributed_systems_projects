@@ -49,7 +49,8 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             numTasks.decrementAndGet();  // cleanup
             return null;
         }
-        System.out.println("[PEER]: serviced file to other peer");
+        System.out.println("[PEER]: Serviced file to other peer.\n");
+        System.out.println("[PEER]: Enter command:");
         numTasks.decrementAndGet();
         // limitation: transmission takes time and occurs after load decremented
         return new FileDownload(contents);
@@ -232,6 +233,17 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
      */
     public void HandleJoinAndLeave(String request){
         try {
+            // Read in files from peer's folder
+            dirPath = "files/mach" + machID + "/";
+            fnames = Collections.synchronizedList(new ArrayList<FileInfo>());
+            if (!ScanFiles()) {
+                String msg = "[PEER]: Failed to scan directory. Check that src/files/mach";
+                msg += machID + " exists with the correct permissions.";
+                System.out.println(msg);
+                server.Leave(machID);
+                System.exit(0);
+            }
+
             // Initialize peer IP address and port number
             IP = InetAddress.getLocalHost().getHostAddress();
 
@@ -245,6 +257,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                     
                     // Update server with all files associated with this client
                     server.UpdateList(fnames, machID);
+                    System.out.println("[PEER]: Server has been updated with the latest files.");
 
                     // Register this peer object on the server's registry
                     registry.rebind("Peer_" + machID, this);
@@ -270,6 +283,13 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
      * @param request: Request string entered by the peer node in the command line.
      */
     private static void HandleFindAndDownloadRequest(String request){
+        try {
+            server.Ping();
+        } catch (Exception e){
+            System.out.println("[PEER]: It's possible that the server is currently offline. Try again later.");
+            return;
+        }
+        
         String[] parts = request.split(":");
         String fname = parts[1].trim();
         if (parts[0].trim().equalsIgnoreCase("find")){
@@ -304,7 +324,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
                 }
             } catch (RemoteException e) {
                 System.out.printf(
-                        "[PEER]: Failed to download file %s. It's possible the file is already present in this peer's folder or the other peer's don't currently have it.\n",
+                        "[PEER]: Download unsuccessful. Either file is not currently being tracked or is already present in peer's folder. \n",
                         fname);
                 return;
             }
@@ -426,15 +446,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         // Join server as soon as node boots up
         port = GetRandomPortNumber();
 
-        dirPath = "files/mach" + machID + "/";
-        fnames = Collections.synchronizedList(new ArrayList<FileInfo>());
-        if (!ScanFiles()) {
-            String msg = "[PEER]: Failed to scan directory. Check that src/files/mach";
-            msg += machID + " exists with the correct permissions.";
-            System.out.println(msg);
-            server.Leave(machID);
-            System.exit(0);
-        }
         numTasks = new AtomicInteger(0);
 
         if (!ScanLatencies("files/static_latency.txt")) {
