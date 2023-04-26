@@ -37,6 +37,7 @@ public class SystemTests {
                     registry.unbind("Peer_" + i);
                 } catch (Exception e) {}
             }
+            registry.unbind("TrackingServer");
         } catch (Exception e) {}
 
     }
@@ -262,24 +263,26 @@ public class SystemTests {
                 tracker.getInputStream()));
         Assert.assertTrue(tracker.isAlive());
         // wait for output to indicate readiness
-        tReader.readLine();
+        tReader.readLine();  // blank line
         Assert.assertEquals("[SERVER]: Tracking Server is ready at port 11396.", tReader.readLine());
 
-        PrintWriter writer;
+        PrintWriter writer = null;
         for (int i = 0; i < 5; i++) {
             writer = new PrintWriter(peers.get(i).getOutputStream());
             writer.print("join\n");
             writer.flush();
         }
-        BufferedReader reader = new BufferedReader(new InputStreamReader(
-            peers.get(4).getInputStream()));
-        while (reader.ready()) {  // TODO: must be a for loop, must block
-            System.out.println(reader.readLine());
-        }
-        // TODO: check successful join msg, check find
+
         writer.print("find:file2.txt\n");
         writer.flush();
-        // TODO
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+            peers.get(4).getInputStream()));
+        Assert.assertEquals("[PEER]: Connected to server at port 11396",
+            reader.readLine());
+        for (int i = 0; i < 2; i++) {  // TODO: make sure test passes
+            System.out.println("TestTrackerFault: " + reader.readLine());
+        }
+        Assert.assertEquals("[PEER]: Found file at nodes: 2", reader.readLine());
 
         killSystem();
     }
