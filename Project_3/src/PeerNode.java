@@ -29,6 +29,9 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
 
     public PeerNode() throws RemoteException {}
     
+    /**
+     * Remote method that returns number of concurrent tasks peer is executing
+     */
     public int GetLoad() throws RemoteException {
         return numTasks.get();
     }
@@ -36,9 +39,19 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
     /**
      * call on peer that has already been selected, is RMI
      * calculates checksum and returns it
+     * @param fname string filename (no path) of requested file
+     * @param peerID id of requesting peer
      */
-    public FileDownload Download(String fname) throws RemoteException {
+    public FileDownload Download(String fname, int peerID) throws RemoteException {
         numTasks.incrementAndGet();  // must cleanup before every return
+        try {
+            Thread.sleep(latencies[machID][peerID]);  // simulate latency
+        } catch (InterruptedException e) {
+            System.out.println("[PEER]: error occurred while simulating latency");
+            numTasks.decrementAndGet();
+            return null;
+        }
+    
         byte[] contents;
         try {
             contents = Files.readAllBytes(Paths.get(dirPath + fname));
@@ -109,13 +122,13 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             FileDownload dl = null;
             try {
                 ref = candidate.SetAndGetReference(serverHostname, trackerPort);
-                dl = ref.Download(fname);
+                dl = ref.Download(fname, machID);
             } catch (NotBoundException e) {
                 continue;  // move on
             } catch (RemoteException f) {
                 // try one more time
                 try {
-                    dl = ref.Download(fname);
+                    dl = ref.Download(fname, machID);
                 } catch (RemoteException g) {
                     System.out.println("[PEER]: Failed to download from peer "
                                             + candidate.GetID());
@@ -130,7 +143,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             try {
                 // if checksum fails
                 if (dl.computeChecksum() != finfo.getChecksum()) {
-                    dl = ref.Download(fname);  // try same peer again
+                    dl = ref.Download(fname, machID);  // try same peer again
                 }
                 // if it breaks again
                 if (dl.computeChecksum() != finfo.getChecksum()) {
