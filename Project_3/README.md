@@ -126,6 +126,19 @@ Example image of when a `download` function returns an error if the file is alre
 
 First download command succeeds since peer didn't have the file; second download command fails since file is already present in the requesting peer's folder; and third download command fails since file is not being tracked by any peer.
 
+## Class Design Descriptions
+### PeerNode
+
+### Tracker
+
+### TrackedPeer
+
+### FileInfo
+
+### FileDownload
+
+### ComparePeer
+
 ## Running Tests
 
 Navigate to the test directory from root with
