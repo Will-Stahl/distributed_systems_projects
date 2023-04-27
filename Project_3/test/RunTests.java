@@ -1,7 +1,6 @@
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
-import java.util.Optional;
 
 // compile with: javac -cp ./../lib/junit-4.13.2.jar:. RunTests.java 
 // run with:     java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTests

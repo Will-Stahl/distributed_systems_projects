@@ -68,26 +68,77 @@ Example image below:
 
 ### Leaving the tracker server
 
-A client can leave the tracker server at any time by entering `leave` in their respective client UI terminal.
+A peer can leave the tracker server at any time by entering `leave` in their respective peer UI terminal.
 
 Example image below:
 
 <img src="images/leave_success.png"  width="60%" height="60%">
 
-A client cannot leave the tracker server if it was never part of it.
+A peer cannot leave the tracker server if it was never part of it.
 
 Example image below:
 
 <img src="images/leave_error.png"  width="60%" height="60%">
 
+### Finding a file
+
+In order to find a file, a peer can enter the `find: <file name>` in their respective UI terminal. Case doesn't matter for the `find` command, so you can enter `FIND: <file name>` and that should work too.
+
+Example image of a successful `find` command:
+
+<img src="images/find_success.png"  width="60%" height="60%">
+
+Attempting to find a file that doesn't belong to any peer results in an error message being printed.
+
+Example image of an unsuccessful `find` command:
+
+<img src="images/find_error.png"  width="60%" height="60%">
+
+The format of the `find` function matters.
+
+Example image of an incorrectly formatted `find` function:
+
+<img src="images/find_error_2.png"  width="60%" height="60%">
+
+In-case multiple peers have a file, then all peer IDs are printed to the terminal:
+
+<img src="images/find_multiple.png"  width="60%" height="60%">
+
+### Downloading a file
+
+In order to download a file, a peer can enter `download: <file name>` in their respective UI terminal. Case doesn't matter for the `download` command, so you can enter `DOWNLOAD: <file name>` and that should work too.
+
+Note: Since we have simulated file latency, it takes a maximum of 5 seconds to download a file into a peer's folder.
+
+Example image of a successful `download` command:
+
+<img src="images/download_success.png"  width="60%" height="60%">
+
+The format of the `download` function matters.
+
+Example image of an incorrectly formatted `download` function:
+
+<img src="images/download_error.png"  width="60%" height="60%">
+
+Example image of when a `download` function returns an error if the file is already present in the requesting peer's folder or when the file itself doesn't exist:
+
+<img src="images/download_error_2.png"  width="60%" height="60%">
+
+First download command succeeds since peer didn't have the file; second download command fails since file is already present in the requesting peer's folder; and third download command fails since file is not being tracked by any peer.
+
 ## Running Tests
+
 Navigate to the test directory from root with
+
 ```
 cd test
 ```
+
 Compile and then run with
-````
+
+```
 javac -cp ./../lib/junit-4.13.2.jar:. RunTests.java
 java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTests
-````
+```
+
 Note that the tests manipulate the `files` directory, so anything done in the command line interface may be changed. It is also assumed that files with names corresponding to their respective directories are always present, so do not delete them.
