@@ -35,10 +35,6 @@ public class TrackedPeer implements Serializable {
         ping = 0;
     }
 
-    // public TrackedPeer GetCopy() {
-    //     return new TrackedPeer(id, port, addr, files.clone());
-    // }
-
     /**
      * sets reference if not set and returns it
      */
@@ -51,14 +47,6 @@ public class TrackedPeer implements Serializable {
         reference = (PeerNodeInterface) registry.lookup("Peer_" + id);
         return reference;
     }
-
-    // public PeerNodeInterface GetReference() {
-    //     return reference;
-    // }
-
-    // public void SetReference(PeerNodeInterface reference) {
-    //     this.reference = reference;
-    // }
 
     /**
      * override files with argument array

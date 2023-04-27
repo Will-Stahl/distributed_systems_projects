@@ -121,8 +121,6 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
             }
         }
 
-        // for all file names associated with machID
-
         // Set peerInfo for this particular ID back to null in case the peer node decides to join back at a later time.
         peerInfo.set(machID, null);
     }
