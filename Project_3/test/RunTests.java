@@ -21,9 +21,5 @@ public class RunTests {
         // ensure processes aren't left over from failure
         ProcessHandle ph = ProcessHandle.current();
         ph.children().forEach(child -> child.destroy());
-        // ProcessHandle[] children = (ProcessHandle[]) ph.children().toArray();
-        // for (int i = 0; i < children.length; i++) {
-        //     children[i].destroy();
-        // }
     }
 }

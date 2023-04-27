@@ -62,7 +62,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             numTasks.decrementAndGet();  // cleanup
             return null;
         }
-        System.out.println("[PEER]: Serviced file to other peer.\n");
+        System.out.println("[PEER]: Serviced file to peer: " + peerID);
         System.out.println("[PEER]: Enter command:");
         numTasks.decrementAndGet();
         // limitation: transmission takes time and occurs after load decremented
@@ -403,7 +403,6 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         try {
             entries = Files.readAllLines(Paths.get(cfname));
         } catch (IOException e) {
-            System.out.println("[DEBUG] BB");
             return false;
         }
         latencies = new int[maxSupported][maxSupported];

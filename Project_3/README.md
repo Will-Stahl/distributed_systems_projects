@@ -90,4 +90,8 @@ Compile and then run with
 javac -cp ./../lib/junit-4.13.2.jar:. RunTests.java
 java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTests
 ````
-Note that the tests manipulate the `files` directory, so anything done in the command line interface may be changed. It is also assumed that files with names corresponding to their respective directories are always present, so do not delete them.
+Notes:
+* Note that the tests manipulate the `files` directory, so anything done in the command line interface may be changed.
+* It is assumed that files with names corresponding to their respective directories are always present, so do not delete them.
+* An oddity we noted on the CSE lab machines was that tests seemed fail when run for the first time after compilation, but subsequent attempts tended to yeild successful tests. Due to process scheduling, the tests don't necessarily run in a deterministic way.
+* Tests will take over a minute to complete due to simulated download latency and process scheduling.

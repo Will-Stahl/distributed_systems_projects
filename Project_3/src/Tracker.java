@@ -104,7 +104,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
         return true;
     }
 
-    private void removeNode(int machID) {
+    private static void removeNode(int machID) {
         synchronized (peerInfo) {
             TrackedPeer peerToBeRemoved = peerInfo.get(machID);
             for (String fname : peerToBeRemoved.GetFiles()) {
@@ -135,7 +135,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
             TrackerInterface server = new Tracker();
             registry = LocateRegistry.createRegistry(serverPort);
             registry.rebind("TrackingServer", server);
-            System.out.printf("\n[SERVER]: Tracking Server is ready at port %d. \n", serverPort);
+            System.out.printf("\n[SERVER]: Tracking Server is ready at port %d.\n", serverPort);
 
             for (int i = 0; i < 5; i++) {
                 try {
@@ -158,7 +158,7 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
                                     }
                                 } catch (Exception e){
                                     // If the peer is offline, then set the object value to null
-                                    peerInfo.set(i, null);
+                                    removeNode(i);
                                 }
                             }
                         }
