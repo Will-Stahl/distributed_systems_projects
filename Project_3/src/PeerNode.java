@@ -61,7 +61,7 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
             return null;
         }
         System.out.println("[PEER]: Serviced file to peer: " + peerID);
-        System.out.println("\n[PEER]: Enter command:");
+        System.out.println("[PEER]: Enter command:");
         numTasks.decrementAndGet();
         // limitation: transmission takes time and occurs after load decremented
         return new FileDownload(contents);
