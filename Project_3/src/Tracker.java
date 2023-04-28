@@ -42,6 +42,10 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
         }
     }
 
+    /**
+     * Removes all tracking information associated with the peer that wants to leave the tracker server.
+     * @param machID peer's assigned unique machine ID
+     */
     public boolean Leave(int machID) throws RemoteException {
         if (peerInfo.get(machID) == null){
             System.out.printf("[SERVER]: Process with ID %d was not joined.\n", machID); 
@@ -125,6 +129,9 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
         peerInfo.set(machID, null);
     }
 
+    // This function is useful for the peer to ping the server to check if its active or not.
+    // We don't periodically call this function. We only call it when the peers issue a "find" or
+    // "download" command.
     public void Ping(){}
 
     public static void main(String[] args){
