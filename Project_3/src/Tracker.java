@@ -142,24 +142,24 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
 
             // Periodically ping every peer node that is currently online
             Timer timer = new Timer();
-                TimerTask task = new TimerTask() {
-                    public void run(){
-                        synchronized (peerInfo) {
-                            for (int i = 0; i < peerInfo.size(); i++){
-                                try {
-                                    if (peerInfo.get(i) != null){
-                                        PeerNodeInterface peer = (PeerNodeInterface) registry.lookup("Peer_" + i);
-                                        peer.Ping();
-                                        System.out.printf("[SERVER]: Peer with MachID = %d is online!\n", i);
-                                    }
-                                } catch (Exception e){
-                                    // If the peer is offline, then set the object value to null
-                                    removeNode(i);
+            TimerTask task = new TimerTask() {
+                public void run(){
+                    synchronized (peerInfo) {
+                        for (int i = 0; i < peerInfo.size(); i++){
+                            try {
+                                if (peerInfo.get(i) != null){
+                                    PeerNodeInterface peer = (PeerNodeInterface) registry.lookup("Peer_" + i);
+                                    peer.Ping();
+                                    System.out.printf("[SERVER]: Peer with MachID = %d is online!\n", i);
                                 }
+                            } catch (Exception e){
+                                // If the peer is offline, then set the object value to null
+                                removeNode(i);
                             }
                         }
                     }
-                };
+                }
+            };
             timer.schedule(task, 0, 2000);
 
         } catch (Exception e){
