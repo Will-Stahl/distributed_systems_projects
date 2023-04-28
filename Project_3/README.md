@@ -2,6 +2,29 @@
 
 ## Authors: Jashwin Acharya (`achar061`), William Stahl (`stahl186`)
 
+Individual Contributions:
+
+<ul>
+    <li> William Stahl
+        <ul>
+            <li></li>
+        </ul>
+    </li>
+    <li> Jashwin Acharya
+        <ul>
+            <li> Implemented the complete client UI as well as client request validation functions. </li>
+            <li> Implemented all client side unit tests. </li>
+            <li> Implemented Fault Tolerance for Server crashing. </li>
+            <li> Implemented functionality for server being able to detect offline peers </li>
+            <li> Updated Design Documentation and README with instructions on how to run the whole system and test cases. </li>
+        </ul>
+    </li>
+</ul>
+
+Pledge:
+
+<img src="images/Pledge.png"  width="60%" height="60%">
+
 ## Running Server and clients
 
 Navigate to the src folder.
