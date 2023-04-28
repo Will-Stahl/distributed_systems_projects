@@ -126,6 +126,24 @@ Example image of when a `download` function returns an error if the file is alre
 
 First download command succeeds since peer didn't have the file; second download command fails since file is already present in the requesting peer's folder; and third download command fails since file is not being tracked by any peer.
 
+### Peer attempts to communicate while server is down
+
+Peers are blocked from communicating with a server if it is down.
+
+Example image below:
+
+<img src="images/server_down_error.png"  width="60%" height="60%">
+
+### Peer can communicate with server once its back up
+
+Once Tracker is online, peers can join and communicate with other peers.
+
+Example images below:
+
+<img src="images/server_online_join.png"  width="60%" height="60%">
+
+<img src="images/server_back_online.png"  width="60%" height="60%">
+
 ## Class Design Descriptions
 
 ### PeerNode
@@ -182,7 +200,28 @@ In this case, no communication and exchange of files takes place among peers sin
 
 In this case, the peer terminal usually prints an error message saying that the tracker is currently not tracking the requested file and the user is prompted to enter a new command.
 
+## Testing Description
+
+We have two separate test files for testing UI related commands and server commands.
+
+The first file is ClientTestCases.java which contains 4 tests for checking valid `find` and `download` commands and 8 test cases for checking invalid `find` and `download` commands.
+
+The second file is SystemTests.java which contains the following test functions:
+
+<ul>
+    <li>TestFind(): Contains 5 tests for checking if the `find` command returns valid answers from the server.</li>
+    <li>TestDownload(): Contains 4 tests for checking if the `download` functionality works correctly by downloading file contents from different peers </li>
+    <li>TestShare(): Contains 7 tests for checking that a file is shareable once it is downloaded from another peer's folder. </li>
+    <li>TestTrackerFault(): Contains 4 test cases that check if a peer can join once the tracker is back online and that files can be found once the peers have joined the tracker. </li>
+    <li>TestPeerFault(): Contains 4 test cases for checking if a peer can gracefully rejoin once it has crashed and can also share files.</li>
+    <li>TestLatencyChoice(): Contains 1 test that checks if the correct peers are chosen based on latency given that there is no additional load.</li>
+    <li>TestPeerChoice(): Contains 2 test cases that check if a peer is chosen based on their current load.</li>
+    <li>TestSimultaneousDownloads(): Contains 4 test cases for checking that simulataneous downloads complete successfully.</li>
+</ul>
+
 ## Running Tests
+
+Make sure all currently active terminals have been closed before attempting to run any tests.
 
 Navigate to the test directory from root with
 
@@ -190,12 +229,41 @@ Navigate to the test directory from root with
 cd test
 ```
 
-Compile and then run with
+### Running Client Side tests
+
+Compile Client side tests with the following command:
+
+```
+javac -cp ./../lib/junit-4.13.2.jar:. RunClientTestCases.java
+```
+
+Run the client side tests with the following command:
+
+```
+java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunClientTestCases
+```
+
+Example image below of all client side tests passing:
+
+<img src="images/client_tests.png"  width="60%" height="60%">
+
+### Running Server Side tests
+
+Compile Server side tests with the following command:
 
 ```
 javac -cp ./../lib/junit-4.13.2.jar:. RunTests.java
+```
+
+Run the server side tests with the following command:
+
+```
 java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTests
 ```
+
+Example image below of all server side tests passing:
+
+<img src="images/test_passing.png"  width="60%" height="60%">
 
 Notes:
 
@@ -203,3 +271,4 @@ Notes:
 - It is assumed that files with names corresponding to their respective directories are always present, so do not delete them.
 - An oddity we noted on the CSE lab machines was that tests seemed fail when run for the first time after compilation, but subsequent attempts tended to yeild successful tests. Due to process scheduling, the tests don't necessarily run in a deterministic way.
 - Tests will take over a minute to complete due to simulated download latency and process scheduling.
+- If the tests keep failing on repeated attempts (the chances are rare), please restart your PC and then run the tests again. It's possible that there are lingering java processes running in the background that might be interfering with the tests.
