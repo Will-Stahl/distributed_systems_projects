@@ -339,6 +339,6 @@ Notes:
 
 - Note that the tests manipulate the `files` directory, so anything done in the command line interface may be changed.
 - It is assumed that files with names corresponding to their respective directories are always present, so do not delete them.
-- An oddity we noted on the CSE lab machines was that tests seemed fail when run for the first time after compilation, but subsequent attempts tended to yeild successful tests. Due to process scheduling, the tests don't necessarily run in a deterministic way.
+- An oddity we noted on the CSE lab machines was that tests seemed fail when run for the first time after compilation, but subsequent attempts tended to yeild successful tests. Due to process scheduling, the tests don't necessarily run in a deterministic way. During our testing, the tests ran almost 99% of the time without throwing any errors.
 - Tests will take over a minute to complete due to simulated download latency and process scheduling.
-- If the tests keep failing on repeated attempts (the chances are rare), please restart your PC and then run the tests again. It's possible that there are lingering java processes running in the background that might be interfering with the tests.
+- If the tests keep failing on repeated attempts (the chances are rare), please restart your PC and then run the tests again. It's possible that there are lingering java processes running in the background that might be interfering with the tests. You can also type `pkill java` to kill all java processes and then you can restart the tests.
