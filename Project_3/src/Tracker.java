@@ -150,7 +150,6 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
                                     if (peerInfo.get(i) != null){
                                         PeerNodeInterface peer = (PeerNodeInterface) registry.lookup("Peer_" + i);
                                         peer.Ping();
-                                        // TODO: Uncomment once done with debugging.
                                         System.out.printf("[SERVER]: Peer with MachID = %d is online!\n", i);
                                     }
                                 } catch (Exception e){
