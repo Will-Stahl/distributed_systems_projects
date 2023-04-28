@@ -37,6 +37,7 @@ public class FileDownload implements Serializable {
         return (crc.getValue() == checksum);
     }
 
+    // Function for computing checksum of a file
     public long computeChecksum() {
         CRC32 crc = new CRC32();
         crc.update(contents);  // computes checksum

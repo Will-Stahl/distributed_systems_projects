@@ -180,6 +180,10 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         System.out.println("4. Enter \"Download: <File Name>\" to download a file from a peer.");
     }
 
+    /**
+     * Function for taking user input from the peer UI terminal(s)
+     * @param peer - Peer object
+     */
     private static void SendClientRequestToServer(PeerNode peer){
         Scanner sc = new Scanner(System.in);
         while(true){
@@ -390,6 +394,11 @@ public class PeerNode extends UnicastRemoteObject implements PeerNodeInterface {
         return (0 <= machID && machID <= 4);
     }
 
+    /**
+     * Function for scanning latency file
+     * @param cfname - latency file path
+     * @return
+     */
     public static boolean ScanLatencies(String cfname) {
         if (System.getProperty("user.dir").endsWith("test")) {
             cfname = "../src/files/static_latency.txt";

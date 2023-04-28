@@ -107,6 +107,10 @@ public class Tracker extends UnicastRemoteObject implements TrackerInterface {
         return true;
     }
 
+    /**
+     * Remove all file mappings associated with a peer that has left the server.
+     * @param machID - Unique peer ID.
+     */
     private static void removeNode(int machID) {
         synchronized (peerInfo) {
             TrackedPeer peerToBeRemoved = peerInfo.get(machID);
