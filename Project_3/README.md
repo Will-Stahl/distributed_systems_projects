@@ -169,6 +169,32 @@ Example images below:
 
 <img src="images/server_back_online.png"  width="60%" height="60%">
 
+### Server is online but peer crashes
+
+If a peer crashes while it is connected to the server, then the user can simply relaunch the peer from its respective terminal window and it will automatically connect to the server and update its file sharing information.
+
+Example screenshots displaying how fault tolerance works for the above described scenario:
+
+Note: In the images below, the terminal at the bottom runs peer 0 and the one on top right runs peer 1 while the terminal on top left runs the Tracker.
+
+1. Server and 2 peers are in a session and peer 0 downloads a file peer 1:
+
+<img src="images/peer_fault_0.png"  width="60%" height="60%">
+
+2. Peer 0 is forcefully crashed and is no longer communicating with the server:
+
+<img src="images/peer_fault_1.png"  width="60%" height="60%">
+
+3. Peer 0 joins back and automatically connects to the Tracker:
+
+<img src="images/peer_fault_2.png"  width="60%" height="60%">
+
+4. Peer 0 attempts to download file1.txt and is unable to since it had already downloaded it previously, thus proving that rejoining the server after a crash allows the peer to provide the most up-to-date file sharing information to the server.
+
+<img src="images/peer_fault_3.png"  width="60%" height="60%">
+
+Note: Once the peer is launched again, it can around 2-3 seconds for it to connect back to the server since the server needs to update its list of tracked peers.
+
 ## Class Design Descriptions
 
 ### PeerNode
@@ -224,6 +250,25 @@ In this case, no communication and exchange of files takes place among peers sin
 #### Fail to find a file
 
 In this case, the peer terminal usually prints an error message saying that the tracker is currently not tracking the requested file and the user is prompted to enter a new command.
+
+Note: One small limitation of our system is that the peer does not periodically update the server with its list of files. A peer only updates its file sharing details when it is launched or if it leaves and joins the server using the command line operations "join" and "leave" that we have defined. So, if a user were to manually delete a file from a peer's folder, the peer would have to leave the tracking server and then join back to allows the tracker to be updated with the latest file sharing information associated with that peer.
+
+### Download Time Analysis
+
+We noticed that distributing a file across different peers causes the download time for that particular file to lower as the number of peers possessing the file increases. The following analysis was done based on different load and latency situations where Peer 0 picked different peers depending on if those peers were doing subsequent download operations or not.
+
+In all these cases, we only care about how long it takes to download "foo.txt" into peer 0's folder depending on how many peers have it.
+
+<ul>
+    <li>Peer 1 contains "foo.txt": Only Peer 0 and Peer 1 are active and Peer 0 issues a download command for "foo.txt": Time to download is 4 seconds</li>
+    <li>Peer 2 and 3 contain "foo.txt": Peer 0, 2 and 3's terminal windows are active and peer 0 issues a download request for "foot.txt". Time to download is 3.67 seconds and the peer selected for download was Peer 3.</li>
+    <li>Peer 2, 3 and 4 contain "foo.txt": Peer 0, 2, 3 and 4's terminal windows are active and peer 0 issues a download request for "foo.txt"; peer 3 also issues a download request for "file2.txt"; peer 2 issues a download request for "file4.txt"; and peer 4 issues a download request for "file3.txt". Time to download is 3.36 seconds and the peer selected for download is peer 4.</li>
+    <li> Peer 1, 2, 3 and 4 contain "foo.txt": All peer terminals are active and peer 0 issues a download request for "foo.txt"; peer 4 issues a download request for "file3.txt"; peer 3 issues a download request for "file2.txt"; peer 2 issues a download request for "file3.txt"; and peer 1 issues a download request for "file2.txt". Time to download is 2.9 seconds and the peer selected for download is peer 4.
+</ul>
+
+<img src="images/analysis.png"  width="60%" height="60%">
+
+As we can see in the graph above, as the number of peers holding a file increases along with the number of subsequent download operations, the download time for "foo.txt" generally decreases for peer 0.
 
 ## Testing Description
 
