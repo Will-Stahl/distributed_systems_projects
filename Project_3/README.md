@@ -16,7 +16,7 @@ Individual Contributions:
             <li> Implemented all client side unit tests. </li>
             <li> Implemented Fault Tolerance for Server crashing. </li>
             <li> Implemented functionality for server being able to detect offline peers </li>
-            <li> Updated Design Documentation and README with instructions on how to run the whole system and test cases. </li>
+            <li> Updated Design Documentation and README with instructions on how to run the whole system and test cases and also performed the Download Time Analysis.</li>
         </ul>
     </li>
 </ul>
