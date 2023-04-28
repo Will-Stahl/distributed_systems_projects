@@ -5,7 +5,6 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
 public class Tracker extends UnicastRemoteObject implements TrackerInterface {
-    // port# like 8000 is too likely to be used by someone else on lab machine
     private static int serverPort = 11396;
 
     private static Registry registry;

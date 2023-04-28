@@ -24,6 +24,8 @@ Example image below:
 
 ## Running clients and using client UI
 
+Note: Only machIDs between 0 and 4 (inclusive) can be used.
+
 Open a separate terminal window (apart from the server one) and compile PeerNode.java using the command:
 
 ```
