@@ -7,7 +7,11 @@ Individual Contributions:
 <ul>
     <li> William Stahl
         <ul>
-            <li></li>
+            <li> Implemented peer booting (scanning file list, latecny file) </li>
+            <li> Implemented peer tracking with data structures </li>
+            <li> Implemented `FileDownload` class with random corruption </li>
+            <li> Implemented fault tolerance for downloading from peers </li>
+            <li> Unit tests for running system as a whole </li>
         </ul>
     </li>
     <li> Jashwin Acharya
@@ -199,7 +203,7 @@ Note: Once the peer is launched again, it can around 2-3 seconds for it to conne
 
 ### PeerNode
 
-Runs the command line interface as well as implements `PeerNodeInterface` for inter-peer communication. Thus its remote methods are `Find` and `Download`, `GetLoad` and `Ping`. The handlers for command line input eventually call these methods depending on the input, or remote methods on the tracker.
+Runs the command line interface as well as implements `PeerNodeInterface` for inter-peer communication. Thus its remote methods are `Find` and `Download`, `GetLoad` and `Ping`. The handlers for command line input eventually call these methods depending on the input or remote methods on the tracker.
 On startup, this class reads its file list into a data structure, joins the server, and updates the server on its files list. It finally starts a thread that listens for command line input. When attempting to handle a download request in particular, there are mechanisms to handle corrupt content and unreachable peers.
 To make a download request, it uses `Find` to determine which peers can share the file (the peer does not track state from `Find` between commands). Then, it sorts the peers based on our latency-load function and attempts downloading from peers in that order. It will re-attempt a peer if there is corruption or a `RemoteException` before moving on to the next peer.
 The latency-load function simply multiplies the known latency with a call to `GetLoad`, which creates a "ping" index on which to sort the peers. Multiplication was chosen so that load and latency can have an equal contribution to the sorting.
@@ -217,29 +221,29 @@ This class is useful for tracking information associated with a peer such as the
 
 ### FileInfo
 
-This class houses information for a file such as what peers currently possess the file, what's the name of the file as well as its checksum details. This is particularly useful for the "find" function defined in Tracker.java which returns a list of peers (sorted by load) that currently possess this file in their respective directories.
+This class houses information for a file such as what peers currently possess the file, what's the name of the file as well as its checksum details. This is particularly useful for the `Find` function defined in Tracker.java which returns a list of peers that currently possess this file in their respective directories.
 
 ### FileDownload
 
-This class allows File Downloads to occur between clients by computing checksum values using the CRC32 hash operation and also has a function called AddNoise() that corrupts the file randomly. If a file has 5 bytes, then there exists a 5/10000 chance that it will be corrupted. In case a download operation fails due to a file being corrupted, the peer either attempts to re-download the file or tries another peer (according to code we've written in the DownloadAsClient function in PeerNode.java).
+This class allows File Downloads to occur between clients by computing checksum values using the CRC32 hash operation and also has a function called `AddNoise()` that corrupts the file randomly, which is called in the constructor. If a file has 5 bytes, then there exists a 5/10000 chance that it will be corrupted. In case a download operation fails due to a file being corrupted, the peer attempts to re-download the file one time before trying another peer (according to code we've written in the DownloadAsClient function in PeerNode.java).
 
 ### ComparePeer
 
-This is a class that simply compares the load and latency of peers and returns them in sorted order so that our algorithm in the DownloadAsClient() function defined in PeerNode.java can make an accurate decision on what peer to query for a file.
+This is a class that implements the `Comparator<T>` interface. It compares the load and latency index of peers (`ping` attribute) so that a `Set`'s sort function returns them in sorted order. This way, our algorithm in the `DownloadAsClient()` function defined in `PeerNode.java` can make an accurate decision on what peer to query for a file.
 
 ## Handling Fault Tolerance Scenarios
 
 ### Downloaded files can be corrupted
 
-As we've defined earlier in the "Class Design Descriptions" section, there is a random chance of num_bytes/10000 of a file being corrupted. If a downloaded file's checksum value does not match the correct checksum value of the file (i.e., it was corrupted while the download was happening), then we attempt to re-download the file from the same peer again. If our 2nd attempt also leads to a checksum failure, then we move onto the peer who has the next smallest latency value.
+As we've defined earlier in the "Class Design Descriptions" section, there is a random chance of num_bytes/10000 of a file being corrupted. If a downloaded file's checksum value does not match the correct checksum value of the file (i.e., it was corrupted while the download was happening), then we attempt to re-download the file from the same peer again. If our 2nd attempt also leads to a checksum failure, then we move onto the peer who has the next smallest "ping" value.
 
 ### Tracking Server Crashes
 
-Once a server crashes, all currently active peers are unable to send any requests to the server. You can still type "join", "leave" etc in their respective UI terminals, but none of these requests will be forwarded to the server as the remote server object is offline. Peer's are also unable to communicate with each other while the server is down as the server is responsible for keeping track of which peers contain certain files. Once the server is back up, you can type "join" in each of the individual peer UI terminals, thus allowing the peers to rejoin the new register created by the server and the server is also populated with each peer's respective file and folder structure since UpdateList is called everytime a peer joins the network.
+Once a server crashes, all currently active peers are unable to send any requests to the server. You can still type "join", "leave" etc in their respective UI terminals, but none of these requests will be forwarded to the server as the remote server object is offline. Peers are also unable to communicate with each other while the server is down as the server is responsible for keeping track of which peers contain certain files. Once the server is back up, you can type "`join`" in each of the individual peer UI terminals, thus allowing the peers to rejoin the new registry created by the server, and the server is also populated with each peer's respective file and folder structure since `UpdateList` is called everytime a peer joins the network.
 
 ### Peer Crashes
 
-Anytime a peer goes down, the server stops keeping track of the peer since it is offline. We implemented a pinging mecahnism for peers where the server pings peers every 2 seconds to ensure they are online (line 151 in Tracker.java). The reason for keeping the ping interval at 2 seconds is that we have multiple clients in our system that are constantly sharing files with each other and since the tracker is the central point of communication, it is imperative that the tracker is always updated with the list of currently active peers. To make a peer join the tracker server again, you can simply relaunch the peer in a new terminal window. If the server is online, then the peer will be able to join the server and also calls the UpdateList function defined in Tracker.java using the remote server object to let the tracker know of its file and folder structure. If the server is offline and is back online at a later time, then you can simply type "join" in the peer UI terminal and you should be able to join the server.
+Anytime a peer goes down, the server stops keeping track of the peer since it is offline. We implemented a pinging mecahnism for peers where the server pings peers every 2 seconds to ensure they are online (line 151 in `Tracker.java`). The reason for keeping the ping interval at 2 seconds is that we have multiple clients in our system that are constantly sharing files with each other and since the tracker is the central point of communication, it is imperative that the tracker is always updated with the list of currently active peers. To make a peer join the tracker server again, you can simply relaunch the peer in a new terminal window. If the server is online, then the peer will be able to join the server and also calls the `UpdateList` function defined in Tracker.java using the remote server object to let the tracker know of its file and folder structure. If the server is offline and is back online at a later time, then you can simply type "`join`" in the peer UI terminal and you should be able to join the server.
 
 ### Exceptional situations
 
@@ -251,7 +255,7 @@ In this case, no communication and exchange of files takes place among peers sin
 
 In this case, the peer terminal usually prints an error message saying that the tracker is currently not tracking the requested file and the user is prompted to enter a new command.
 
-Note: One small limitation of our system is that the peer does not periodically update the server with its list of files. A peer only updates its file sharing details when it is launched or if it leaves and joins the server using the command line operations "join" and "leave" that we have defined. So, if a user were to manually delete a file from a peer's folder, the peer would have to leave the tracking server and then join back to allows the tracker to be updated with the latest file sharing information associated with that peer.
+Note: One small limitation of our system is that the peer does not periodically update the server with its list of files. A peer only updates its file sharing details when it is launched, when it leaves/joins (using the server using the command line operations "join" and "leave" that we have defined), or when it successfully downloads from another peer. So, if a user were to manually delete a file from a peer's folder, the peer would have to leave the tracking server and then join back to allows the tracker to be updated with the latest file sharing information associated with that peer. A successful download would NOT accomplish this since the peer tracks its files state with data structures when it is up (it only scans its directory on startup).
 
 ### Download Time Analysis
 
@@ -279,14 +283,14 @@ The first file is ClientTestCases.java which contains 4 tests for checking valid
 The second file is SystemTests.java which contains the following test functions:
 
 <ul>
-    <li>TestFind(): Contains 5 tests for checking if the `find` command returns valid answers from the server.</li>
-    <li>TestDownload(): Contains 4 tests for checking if the `download` functionality works correctly by downloading file contents from different peers </li>
-    <li>TestShare(): Contains 7 tests for checking that a file is shareable once it is downloaded from another peer's folder. </li>
-    <li>TestTrackerFault(): Contains 4 test cases that check if a peer can join once the tracker is back online and that files can be found once the peers have joined the tracker. </li>
-    <li>TestPeerFault(): Contains 4 test cases for checking if a peer can gracefully rejoin once it has crashed and can also share files.</li>
-    <li>TestLatencyChoice(): Contains 1 test that checks if the correct peers are chosen based on latency given that there is no additional load.</li>
+    <li>TestFind(): Contains 5 assert statements for checking if the `Find` command returns valid answers from the server.</li>
+    <li>TestDownload(): Contains 4 asserts for checking `Download` functionality, where the actual contents of the file are checked against the original source of that file. </li>
+    <li>TestShare(): Contains 7 asserts for checking that a file is shareable once it is downloaded from another peer's folder. </li>
+    <li>TestTrackerFault(): Contains 4 asserts that check if a peer can join once the tracker is back online and that files can be found once the peers have joined the tracker. </li>
+    <li>TestPeerFault(): Contains 4 assert checks for checking if a peer can gracefully rejoin once it has crashed and can also share files.</li>
+    <li>TestLatencyChoice(): 1 test that checks if the correct peers are chosen based on latency given that there is no additional load.</li>
     <li>TestPeerChoice(): Contains 2 test cases that check if a peer is chosen based on their current load.</li>
-    <li>TestSimultaneousDownloads(): Contains 4 test cases for checking that simulataneous downloads complete successfully.</li>
+    <li>TestSimultaneousDownloads(): Contains 4 asserts for checking that simulataneous downloads complete successfully.</li>
 </ul>
 
 ## Running Tests
@@ -317,28 +321,29 @@ Example image below of all client side tests passing:
 
 <img src="images/client_tests.png"  width="60%" height="60%">
 
-### Running Server Side tests
+### Running System tests
 
-Compile Server side tests with the following command:
+Compile ystem tests with the following command:
 
 ```
 javac -cp ./../lib/junit-4.13.2.jar:. RunTests.java
 ```
 
-Run the server side tests with the following command:
+Run the system tests with the following command:
 
 ```
 java -cp ./../lib/junit-4.13.2.jar:./../lib/hamcrest-core-1.3.jar:. RunTests
 ```
 
-Example image below of all server side tests passing:
+Example image below of all System tests passing:
 
 <img src="images/test_passing.png"  width="60%" height="60%">
 
 Notes:
 
-- Note that the tests manipulate the `files` directory, so anything done in the command line interface may be changed.
-- It is assumed that files with names corresponding to their respective directories are always present, so do not delete them.
-- An oddity we noted on the CSE lab machines was that tests seemed fail when run for the first time after compilation, but subsequent attempts tended to yeild successful tests. Due to process scheduling, the tests don't necessarily run in a deterministic way. During our testing, the tests ran almost 99% of the time without throwing any errors.
+- Note that the tests manipulate the `files` directory, so any files downloaded via command line interface may be removed.
+- It is assumed that files with names corresponding to their respective directories are always present, so do not delete them (i.e. `mach0/file0.txt`).
+- An oddity we noted on the CSE lab machines was that tests seemed fail when run for the first time after compilation, but subsequent attempts tended to yeild successful tests. Due to process scheduling, the tests don't seemt to run in a totally deterministic way. During our testing, the tests passed almost 99% of the time without throwing any errors.
 - Tests will take over a minute to complete due to simulated download latency and process scheduling.
+- If it takes significantly longer than a minute, and is accompanied with no new output from from the test process, it might have blocked due to waiting for stream output. This, however, never actually happened with our final build and final tests implementation.
 - If the tests keep failing on repeated attempts (the chances are rare), please restart your PC and then run the tests again. It's possible that there are lingering java processes running in the background that might be interfering with the tests. You can also type `pkill java` to kill all java processes and then you can restart the tests.
