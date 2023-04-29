@@ -7,7 +7,7 @@ Individual Contributions:
 <ul>
     <li> William Stahl
         <ul>
-            <li> Implemented peer booting (scanning file list, latecny file) </li>
+            <li> Implemented peer booting (scanning file list, latency file) </li>
             <li> Implemented peer tracking with data structures </li>
             <li> Implemented `FileDownload` class with random corruption </li>
             <li> Implemented fault tolerance for downloading from peers </li>
