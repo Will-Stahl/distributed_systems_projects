@@ -229,7 +229,7 @@ This class allows File Downloads to occur between clients by computing checksum 
 
 ### ComparePeer
 
-This is a class that implements the `Comparator<T>` interface. It compares the load and latency index of peers (`ping` attribute) so that a `Set`'s sort function returns them in sorted order. This way, our algorithm in the `DownloadAsClient()` function defined in `PeerNode.java` can make an accurate decision on what peer to query for a file.
+This is a class that implements the `Comparator<T>` interface. It compares the load and latency index of peers (`ping` attribute) so that the `ArrayList`'s sort function returns them in sorted order. This way, our algorithm in the `DownloadAsClient()` function defined in `PeerNode.java` can make an accurate decision on what peer to query for a file.
 
 ## Handling Fault Tolerance Scenarios
 
